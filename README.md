@@ -49,7 +49,7 @@ these features.
 
 ## Installation
 
-1. Download the `pdphyzx.h` header file from the latest release
+1. Download the `dist/pdphyzx.h` header file
 2. Copy it into your Playdate project
 3. Include the header in your code:
 
