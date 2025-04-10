@@ -1,40 +1,75 @@
 # pdphyzx
 
-A simple, performant rigid-body physics library for the Playdate console.
+A high-performance impulse-based physics engine built specifically for the
+Playdate console.
 
 ![Demo](placeholder_for_demo.gif)
 
+> Handles up to 256 physics bodies at max FPS with precise collision detection
+> and response - all while staying within the Playdate's performance constraints.
+
+- [Project Status](#project-status)
+- [Features](#features)
+- [Installation](#installation)
+- [Basic Usage](#basic-usage)
+- [API Reference](#api-reference)
+  - [Core API](#core-api)
+  - [World API](#world-api)
+  - [Body API](#body-api)
+  - [Direct Property Access](#direct-property-access)
+- [Memory Management](#memory-management)
+- [Rendering Approaches](#rendering-approaches)
+  - [Manual Drawing](#1-manual-drawing-no-sprites)
+  - [Sprite Integration](#2-sprite-integration)
+- [Math Utilities](#math-utilities)
+  - [Fast Math Operations](#fast-math-operations)
+  - [Vector Utilities](#vector-utilities)
+  - [Matrix Utilities](#matrix-utilities)
+- [Technical Overview](#technical-overview)
+- [Performance Tips](#performance-tips)
+- [Building and Contributing](#building-and-contributing)
+- [Example Applications](#example-applications)
+- [License](#license)
+- [Acknowledgements](#acknowledgements)
+
 ## Project Status
 
-This library is still under active development and is not yet ready for production use. Key aspects being worked on include:
+This library is still under active development and is not yet ready for
+production use. Key aspects being worked on include:
 
-- **Performance vs. Accuracy Tuning**: Finding optimal parameters to balance performance and simulation accuracy
-- **Tunneling Prevention**: Implementing systems to prevent fast-moving objects from passing through thin objects
+- **Performance vs. Accuracy Tuning**: Finding optimal parameters to balance
+  performance and simulation accuracy
+- **Tunneling Prevention**: Implementing systems to prevent fast-moving objects
+  from passing through thin objects
 
 ### Planned Features
 
 The following features are on the roadmap but not yet implemented:
 
-- **Collision Callbacks**: A system for responding to collision events (start, ongoing, end)
+- **Collision Callbacks**: A system for responding to collision events
   - Considering function pointer callbacks
   - Exploring global current collisions query
   - Investigating collisions along raycasts
 - **Additional Shape Types**:
   - Ellipses
   - Pills (capsules)
-- **Kinematic Bodies**: Bodies that can be manually positioned while still participating in physics
+- **Kinematic Bodies**: Bodies that can be manually positioned while still
+  participating in physics
 
-Feel free to open issues or contribute if you're interested in helping develop these features.
+Feel free to open issues or contribute if you're interested in helping develop
+these features.
 
 ## Features
 
+- **Impulse-Based Simulation**: Uses a sequential impulse solver for realistic
+  physical interactions
 - **Lightweight**: Single-header STB-style C library
-- **Performant**: Handles up to 256 static or dynamic bodies at max framerate
-- **Simple API**: Easy to integrate into existing Playdate projects
+- **Optimized for Playdate**: Handles up to 256 bodies at smooth framerates
+- **Simple API**: Direct integration with Playdate's C SDK
 - **Shape Support**:
-  - Circles
-  - Boxes
-  - Convex Polygons (up to 64 vertices)
+  - Circles with accurate bouncing and rolling
+  - Boxes with proper inertia and rotation
+  - Convex Polygons (up to 64 vertices) with automatic center-of-mass calculation
 
 ## Installation
 
@@ -50,6 +85,9 @@ Feel free to open issues or contribute if you're interested in helping develop t
 ## Basic Usage
 
 ### Initializing the Physics World
+
+The following example creates a simple physics scene with a bouncing circle, a
+box, and a static ground platform:
 
 ```c
 // Get reference to PlaydateAPI
@@ -117,7 +155,9 @@ px->world->step(world, gravity);
 
 ## API Reference
 
-pdphyzx uses a function pointer-based API design to maintain a clean interface while allowing for efficient internal implementation. The API is organized into logical domains:
+pdphyzx uses a function pointer-based API design to maintain a clean interface
+while allowing for efficient internal implementation. The API is organized into
+logical domains:
 
 ### Core API
 
@@ -198,7 +238,8 @@ px->body->applyImpulse(
 
 ### Direct Property Access
 
-While the API methods should be used for most operations, some properties can be accessed and modified directly:
+While the API methods should be used for most operations, some properties can be
+accessed and modified directly:
 
 ```c
 // Material properties
@@ -227,14 +268,18 @@ PxAABB aabb = body->aabb;
 
 ## Memory Management
 
-pdphyzx uses an internally managed memory system for physics bodies, with some important considerations:
+pdphyzx uses an internally managed memory system for physics bodies, with some
+important considerations:
 
 ### Body Lifecycle
 
-- **Creation**: Bodies are created through the world API and remain valid until explicitly freed
+- **Creation**: Bodies are created through the world API and remain valid until
+  explicitly freed
 - **Reference**: You receive and store pointers to bodies, which remain stable
-- **Destruction**: Bodies must be freed using `world->freeBody()` when no longer needed
-- **Invalidation**: After freeing a body, its pointer becomes invalid and should not be used
+- **Destruction**: Bodies must be freed using `world->freeBody()` when no longer
+  needed
+- **Invalidation**: After freeing a body, its pointer becomes invalid and should
+  not be used
 
 ### Memory Management Examples
 
@@ -293,11 +338,13 @@ else if (body->collider.type == PX_POLYGON) {
 
 ### 2. Sprite Integration
 
-pdphyzx integrates seamlessly with the Playdate SDK sprite system, enabling physics-driven animations with optimized performance.
+pdphyzx integrates seamlessly with the Playdate SDK sprite system, enabling
+physics-driven animations with optimized performance.
 
 #### Entity Component Pattern
 
-The recommended approach is to create structures that combine physics bodies with sprites:
+The recommended approach is to create structures that combine physics bodies
+with sprites:
 
 ```c
 // Define a game entity with physics and visual components
@@ -355,7 +402,8 @@ static void updateSpriteCallback(LCDSprite *sprite) {
 
 #### Optimized Rotation with Bitmap Tables
 
-For efficient rendering of rotated sprites, use pre-rendered bitmap tables instead of runtime rotation:
+For efficient rendering of rotated sprites, use pre-rendered bitmap tables
+instead of runtime rotation:
 
 ```c
 // Load bitmap table on initialization
@@ -423,7 +471,9 @@ void update() {
 
 ## Math Utilities
 
-pdphyzx includes a comprehensive set of optimized math utilities that can be used both by the physics engine and in your game code:
+pdphyzx includes highly optimized math utilities that boost performance on the
+Playdate's resource-constrained hardware. These functions sacrifice a small
+amount of precision for significant speed improvements:
 
 ### Fast Math Operations
 
@@ -472,9 +522,10 @@ PX_H_PI      // π/2
 PX_EPSILON   // Small value for floating-point comparisons (0.0001)
 ```
 
-### Vector Operations
+### Vector Utilities
 
-pdphyzx includes a powerful 2D vector system with a comprehensive set of operations for game development:
+pdphyzx includes a powerful 2D vector system with a comprehensive set of
+operations for game development:
 
 #### Vector Creation and Access
 
@@ -545,7 +596,8 @@ PxVec2 tangent = pxVec2Tangent(vec, normal);   // Project and subtract
 
 #### Vector Arrays
 
-pdphyzx includes built-in support for vector arrays, useful for polygon vertices and contact points:
+pdphyzx includes built-in support for vector arrays, useful for polygon vertices
+and contact points:
 
 ```c
 // Fixed-size array for exactly 2 vectors (e.g., contact points)
@@ -565,7 +617,7 @@ pxVec2ArraySet(&vertices, 3, pxVec2(0, 100));
 PxVec2 vertex = pxVec2ArrayGet(vertices, 2);
 ```
 
-### Matrix Operations
+### Matrix Utilities
 
 pdphyzx includes a 2×2 matrix system for handling rotations and transformations:
 
@@ -683,7 +735,13 @@ This project uses a custom build system based on [nob.h](https://github.com/tsod
 3. Run examples:
 
    ```bash
-   ./nob run
+   ./nob run sprites # name of example directory
+   ```
+
+4. View all available commands:
+
+   ```bash
+   ./nob help
    ```
 
 The build tool also generates `compile_commands.json` for clangd LSP integration.
