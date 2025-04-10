@@ -1,36 +1,12 @@
 # pdphyzx
 
+<img src="https://github.com/user-attachments/assets/c07b3a99-bbab-4808-987c-981f15a7d249" width="500" />
+
 A high-performance impulse-based physics engine built specifically for the
 Playdate console.
 
-![Demo](placeholder_for_demo.gif)
-
 > Handles up to 256 physics bodies at max FPS with precise collision detection
 > and response - all while staying within the Playdate's performance constraints.
-
-- [Project Status](#project-status)
-- [Features](#features)
-- [Installation](#installation)
-- [Basic Usage](#basic-usage)
-- [API Reference](#api-reference)
-  - [Core API](#core-api)
-  - [World API](#world-api)
-  - [Body API](#body-api)
-  - [Direct Property Access](#direct-property-access)
-- [Memory Management](#memory-management)
-- [Rendering Approaches](#rendering-approaches)
-  - [Manual Drawing](#1-manual-drawing-no-sprites)
-  - [Sprite Integration](#2-sprite-integration)
-- [Math Utilities](#math-utilities)
-  - [Fast Math Operations](#fast-math-operations)
-  - [Vector Utilities](#vector-utilities)
-  - [Matrix Utilities](#matrix-utilities)
-- [Technical Overview](#technical-overview)
-- [Performance Tips](#performance-tips)
-- [Building and Contributing](#building-and-contributing)
-- [Example Applications](#example-applications)
-- [License](#license)
-- [Acknowledgements](#acknowledgements)
 
 ## Project Status
 
