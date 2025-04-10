@@ -77,11 +77,11 @@ void handleInput(void) {
 
   if (pressed) {
     // Check for A button press to spawn a circle
-    if (kButtonA) {
+    if (current == kButtonA) {
       spawnCircle();
     }
 
-    if (kButtonDown) {
+    if (current == kButtonDown) {
       showDebugInfo = !showDebugInfo;
     }
   }

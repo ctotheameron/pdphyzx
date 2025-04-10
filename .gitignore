@@ -2,7 +2,6 @@
 
 # Buld artifacts
 .cache/
-dist/
 build/
 .nvim/*
 !.nvim/init.sample.lua
