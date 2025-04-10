@@ -1,0 +1,14 @@
+.DS_Store
+
+# Buld artifacts
+.cache/
+dist/
+build/
+.nvim/*
+!.nvim/init.sample.lua
+
+# Add your own .env file
+.env
+
+# Build executable
+nob
