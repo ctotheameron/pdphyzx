@@ -1,0 +1,169 @@
+name: Build and Release
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  PLAYDATE_SDK_VERSION: "2.6.2"
+
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+    outputs:
+      sdk-path: ${{ steps.set-path.outputs.sdk-path }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Required for proper versioning
+
+      - name: Install Clang 17
+        run: |
+          wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key | sudo tee /etc/apt/trusted.gpg.d/apt.llvm.org.asc > /dev/null
+          sudo add-apt-repository "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-17 main"
+          sudo apt-get update
+          sudo apt-get install -y clang-17
+          sudo update-alternatives --install /usr/bin/clang clang /usr/bin/clang-17 100
+          sudo update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-17 100
+
+      - name: Build nob
+        run: |
+          clang .nob/nob.c -o nob
+          chmod +x ./nob
+
+      - name: Cache PlaydateSDK
+        id: cache-playdate-sdk
+        uses: actions/cache@v4
+        with:
+          path: ~/PlaydateSDK
+          key: ${{ runner.os }}-playdate-sdk-${{ env.PLAYDATE_SDK_VERSION }}
+
+      - name: Download and setup PlaydateSDK
+        if: steps.cache-playdate-sdk.outputs.cache-hit != 'true'
+        run: |
+          wget -O playdate-sdk.tar.gz "https://download.panic.com/playdate_sdk/Linux/PlaydateSDK-${{ env.PLAYDATE_SDK_VERSION }}.tar.gz"
+          mkdir -p $HOME/PlaydateSDK
+          tar -xf playdate-sdk.tar.gz --strip-components=1 -C $HOME/PlaydateSDK
+          rm playdate-sdk.tar.gz
+
+      - name: Set environment variables
+        id: set-path
+        run: |
+          echo "sdk-path=~/PlaydateSDK" >> $GITHUB_OUTPUT
+
+      - name: Generate bundle
+        run: |
+          PLAYDATE_SDK_PATH=~/PlaydateSDK ./nob bundle
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          path: |
+            ./nob
+            ./dist/pdphyzx.h
+
+  test:
+    needs: setup
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          merge-multiple: true
+
+      - name: Set permissions for nob
+        run: chmod +x ./nob
+
+      - name: Cache PlaydateSDK
+        uses: actions/cache@v4
+        with:
+          path: ~/PlaydateSDK
+          key: ${{ runner.os }}-playdate-sdk-${{ env.PLAYDATE_SDK_VERSION }}
+
+      - name: Run tests
+        run: |
+          PLAYDATE_SDK_PATH=~/PlaydateSDK ./nob test --no-bundle
+
+  build:
+    needs: setup
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          merge-multiple: true
+
+      - name: Set permissions for nob
+        run: chmod +x ./nob
+
+      - name: Cache PlaydateSDK
+        uses: actions/cache@v4
+        with:
+          path: ~/PlaydateSDK
+          key: ${{ runner.os }}-playdate-sdk-${{ env.PLAYDATE_SDK_VERSION }}
+
+      - name: Build example projects
+        run: |
+          PLAYDATE_SDK_PATH=~/PlaydateSDK ./nob build --no-bundle
+
+  release:
+    needs: [test, build]
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          sparse-checkout: |
+            .github
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          merge-multiple: true
+
+      - name: Determine version
+        id: determine-version
+        uses: mathieudutour/github-tag-action@v6.1
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          dry_run: true
+          default_bump: patch
+          release_branches: main
+
+      - name: Generate changelog
+        id: changelog
+        uses: metcalfc/changelog-generator@v4.1.0
+        with:
+          myToken: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: v${{ steps.determine-version.outputs.new_version }}
+          release_name: Release v${{ steps.determine-version.outputs.new_version }}
+          body: |
+            ${{ steps.changelog.outputs.changelog }}
+          draft: false
+          prerelease: false
+
+      - name: Upload Release Asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./dist/pdphyzx.h
+          asset_name: pdphyzx.h
+          asset_content_type: text/plain

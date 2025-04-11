@@ -28,9 +28,14 @@
 #define RELEASE_FLAGS "-O2", "-DNDEBUG"
 
 //- Target-specific ------------------------------------------------------------
-#define SIMULATOR_FLAGS                                                        \
-  "-shared", "-fPIC", "-cl-single-precision-constant", "-DTARGET_SIMULATOR=1", \
-      "-arch", "arm64",
+#define SIMULATOR_FLAGS_COMMON                                                 \
+  "-shared", "-fPIC", "-cl-single-precision-constant", "-DTARGET_SIMULATOR=1"
+
+#if defined(__linux__)
+#define SIMULATOR_FLAGS SIMULATOR_FLAGS_COMMON,
+#else // Assume macOS otherwise
+#define SIMULATOR_FLAGS SIMULATOR_FLAGS_COMMON, "-arch", "arm64",
+#endif
 
 #define DEVICE_FLAGS                                                           \
   "-DTARGET_PLAYDATE=1", "-mthumb", "-mcpu=cortex-m7", "-mfloat-abi=hard",     \
@@ -82,6 +87,7 @@ typedef struct {
   Command command;
   Mode mode;
   Target target;
+  bool skipBundle;
   const char *example;
 } Options;
 
@@ -148,7 +154,8 @@ Command parseCommand(const char *commandStr) {
 }
 
 Options parseBuildOptions(int argc, char **argv) {
-  Options options = {.command = ALL, .mode = DEV, .target = SIMULATOR};
+  Options options = {
+      .command = ALL, .mode = DEV, .target = SIMULATOR, .skipBundle = false};
 
   if (argc > 0) {
     const char *firstArg = argv[0];
@@ -189,6 +196,11 @@ Options parseBuildOptions(int argc, char **argv) {
     if (strcmp(arg, "--target=device") == 0 || strcmp(arg, "-t=device") == 0 ||
         strcmp(arg, "-t=dev") == 0) {
       options.target = DEVICE;
+      continue;
+    }
+
+    if (strcmp(arg, "--no-bundle") == 0) {
+      options.skipBundle = true;
       continue;
     }
 
@@ -524,12 +536,14 @@ bool build(Options options) {
     return false;
   }
 
-  // Copy assets directory to the tmp directory
+  // Copy assets directory to the tmp directory (if they exist)
   char *assetsDir = temp_sprintf("examples/%s/assets", example);
   char *tmpDir = temp_sprintf(BUILD_DIR "/tmp/%s", example);
 
-  if (get_file_type(assetsDir) == FILE_DIRECTORY &&
-      !copy_directory_recursively(assetsDir, tmpDir)) {
+  bool should_copy =
+      nob_file_exists(assetsDir) && get_file_type(assetsDir) == FILE_DIRECTORY;
+
+  if (should_copy && !copy_directory_recursively(assetsDir, tmpDir)) {
     nob_log(WARNING, "Failed to copy assets from %s", assetsDir);
     return false;
   }
@@ -1032,7 +1046,9 @@ int main(int argc, char **argv) {
     result = setPlaydateSDK() && genLspInfo();
     break;
   default:
-    result = setPlaydateSDK() && genLspInfo() && bundleHeader();
+    result = setPlaydateSDK() && genLspInfo();
+    result = result && (options.skipBundle ? true : bundleHeader());
+
     break;
   }
 
