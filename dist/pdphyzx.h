@@ -1726,7 +1726,10 @@ extern PlaydateAPI *pd;
 #endif
 
 #ifndef pxlog
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wgnu-zero-variadic-macro-arguments"
 #define pxlog(s, ...) pd->system->logToConsole((s), ##__VA_ARGS__)
+#pragma clang diagnostic pop
 #endif
 
 
