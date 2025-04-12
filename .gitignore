@@ -2,9 +2,6 @@
 
 # Buld artifacts
 .cache/
-build/
-.nvim/*
-!.nvim/init.sample.lua
 
 # Add your own .env file
 .env

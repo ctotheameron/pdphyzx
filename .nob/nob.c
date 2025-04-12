@@ -48,6 +48,7 @@
 //------------------------------------------------------------------------------
 
 #define BUILD_DIR "build"
+#define DIST_DIR "dist"
 
 const char *SDK;
 const char *SDK_C;
@@ -219,10 +220,16 @@ Options parseBuildOptions(int argc, char **argv) {
 // Build
 //==============================================================================
 
+bool createGitignore(const char *dir) {
+  const char *gitignorePath = temp_sprintf("%s/.gitignore", dir);
+  const char *content = "*\n";
+  return write_entire_file(gitignorePath, content, strlen(content));
+}
+
 bool ensureBuildDir(Target target, const char *example) {
   // Create necessary directories
   if (!mkdir_if_not_exists(BUILD_DIR) ||
-      !mkdir_if_not_exists(BUILD_DIR "/tmp")) {
+      !mkdir_if_not_exists(BUILD_DIR "/tmp") || !createGitignore(BUILD_DIR)) {
     return false;
   }
 
@@ -919,10 +926,10 @@ bool buildOutputContent(String_Builder *o, const char **files, size_t count,
 bool bundleHeader(void) {
   nob_log(INFO, "Creating bundled header...");
 
-  const char *outPath = "dist/pdphyzx.h";
+  const char *outPath = DIST_DIR "/pdphyzx.h";
 
   // Create dist directory if needed
-  if (!nob_mkdir_if_not_exists("dist")) {
+  if (!nob_mkdir_if_not_exists(DIST_DIR) || !createGitignore(DIST_DIR)) {
     return false;
   }
 
