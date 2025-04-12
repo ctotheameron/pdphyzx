@@ -56,7 +56,7 @@ these features.
 2. Copy it into your Playdate project
 3. Include the header in your code:
 
-```cx
+```c
 #define PDPHYZX_IMPLEMENTATION
 #include "pdphyzx.h"
 ```
