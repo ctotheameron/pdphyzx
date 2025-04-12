@@ -1,4 +1,7 @@
 # pdphyzx
+![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/ctotheameron/pdphyzx/build-and-release.yml?branch=main&style=flat-square)
+![GitHub Release](https://img.shields.io/github/v/release/ctotheameron/pdphyzx?style=flat-square&color=%23fac852&link=https%3A%2F%2Fgithub.com%2Fctotheameron%2Fpdphyzx%2Freleases%2Flatest)
+
 
 <img src="https://github.com/user-attachments/assets/c07b3a99-bbab-4808-987c-981f15a7d249" width="500" />
 
@@ -49,7 +52,7 @@ these features.
 
 ## Installation
 
-1. Download the `pdphyzx.h` header file from the latest release
+1. Download `pdphyzx.h` header file fom the [latest release](https://github.com/ctotheameron/pdphyzx/releases/latest)
 2. Copy it into your Playdate project
 3. Include the header in your code:
 
@@ -89,6 +92,11 @@ PxShape circleShape = {.circle = {.radius = radius}};
 PxBody *circleBody = px->world->newDynamicBody(
     world, circleShape, 1.0f, pxVec2(100, 100));
 
+// Configure physics properties
+circleBody->restitution = 0.5f;        // Bounciness
+circleBody->dynamicFriction = 0.5f;    // Friction while moving
+circleBody->staticFriction = 0.7f;     // Friction while still
+
 // Create a box
 float width = 30.0f;
 float height = 20.0f;
@@ -102,11 +110,6 @@ float groundHeight = 10.0f;
 PxShape groundShape = {.box = {.width = groundWidth, .height = groundHeight}};
 PxBody *groundBody = px->world->newStaticBody(
     world, groundShape, pxVec2(200, 190));
-
-// Configure physics properties
-circleBody->restitution = 0.5f;        // Bounciness
-circleBody->dynamicFriction = 0.5f;    // Friction while moving
-circleBody->staticFriction = 0.7f;     // Friction while still
 ```
 
 ### Applying Forces and Impulses
