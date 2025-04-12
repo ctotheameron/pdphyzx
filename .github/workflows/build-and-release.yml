@@ -21,14 +21,34 @@ jobs:
         with:
           fetch-depth: 0 # Required for proper versioning
 
+      - name: Cache Clang 17
+        id: cache-clang
+        uses: actions/cache@v4
+        with:
+          path: ~/clang17
+          key: ${{ runner.os }}-clang-17-bin
+
       - name: Install Clang 17
+        if: steps.cache-clang.outputs.cache-hit != 'true'
         run: |
           wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key | sudo tee /etc/apt/trusted.gpg.d/apt.llvm.org.asc > /dev/null
           sudo add-apt-repository "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-17 main"
           sudo apt-get update
           sudo apt-get install -y clang-17
-          sudo update-alternatives --install /usr/bin/clang clang /usr/bin/clang-17 100
-          sudo update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-17 100
+          mkdir -p ~/clang17
+          cp /usr/bin/clang-17 ~/clang17/clang
+          cp /usr/bin/clang++-17 ~/clang17/clang++
+          chmod +x ~/clang17/clang ~/clang17/clang++
+
+      - name: Setup Clang
+        run: |
+          if [ -d "$HOME/clang17" ]; then
+            chmod +x $HOME/clang17/clang $HOME/clang17/clang++
+            echo "$HOME/clang17" >> $GITHUB_PATH
+          else
+            echo "Error: Clang cache directory not found"
+            exit 1
+          fi
 
       - name: Build nob
         run: |
@@ -49,10 +69,6 @@ jobs:
           mkdir -p $HOME/PlaydateSDK
           tar -xf playdate-sdk.tar.gz --strip-components=1 -C $HOME/PlaydateSDK
           rm playdate-sdk.tar.gz
-
-      - name: Set environment variables
-        id: set-path
-        run: |
           echo "sdk-path=~/PlaydateSDK" >> $GITHUB_OUTPUT
 
       - name: Generate bundle
@@ -77,7 +93,7 @@ jobs:
         with:
           merge-multiple: true
 
-      - name: Set permissions for nob
+      - name: Set permissions
         run: chmod +x ./nob
 
       - name: Cache PlaydateSDK
@@ -130,40 +146,24 @@ jobs:
         with:
           merge-multiple: true
 
-      - name: Determine version
-        id: determine-version
-        uses: mathieudutour/github-tag-action@v6.1
+      - name: Bump version and push tag
+        id: version
+        uses: mathieudutour/github-tag-action@v6.2
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          dry_run: true
-          default_bump: patch
-          release_branches: main
 
-      - name: Generate changelog
-        id: changelog
-        uses: metcalfc/changelog-generator@v4.1.0
-        with:
-          myToken: ${{ secrets.GITHUB_TOKEN }}
+      - name: Add version info to header file
+        run: |
+          HEADER_COMMENT="/*\n * pdphyzx.h - Version ${{ steps.version.outputs.new_tag }}\n * Released under MIT License\n * https://github.com/${{ github.repository }}/releases/tag/${{ steps.version.outputs.new_tag }}\n */\n\n"
+          TEMP_FILE=$(mktemp)
+          echo -e "$HEADER_COMMENT" > "$TEMP_FILE"
+          cat ./dist/pdphyzx.h >> "$TEMP_FILE"
+          mv "$TEMP_FILE" ./dist/pdphyzx.h
 
-      - name: Create Release
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Release
+        uses: softprops/action-gh-release@v2
         with:
-          tag_name: v${{ steps.determine-version.outputs.new_version }}
-          release_name: Release v${{ steps.determine-version.outputs.new_version }}
-          body: |
-            ${{ steps.changelog.outputs.changelog }}
-          draft: false
-          prerelease: false
-
-      - name: Upload Release Asset
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./dist/pdphyzx.h
-          asset_name: pdphyzx.h
-          asset_content_type: text/plain
+          tag_name: ${{ steps.version.outputs.new_tag }}
+          name: Release ${{ steps.version.outputs.new_tag }}
+          files: ./dist/pdphyzx.h
+          body: ${{ steps.version.outputs.changelog }}
