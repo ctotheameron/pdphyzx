@@ -145,25 +145,3 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           merge-multiple: true
-
-      - name: Bump version and push tag
-        id: version
-        uses: mathieudutour/github-tag-action@v6.2
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Add version info to header file
-        run: |
-          HEADER_COMMENT="/*\n * pdphyzx.h - Version ${{ steps.version.outputs.new_tag }}\n * Released under MIT License\n * https://github.com/${{ github.repository }}/releases/tag/${{ steps.version.outputs.new_tag }}\n */\n\n"
-          TEMP_FILE=$(mktemp)
-          echo -e "$HEADER_COMMENT" > "$TEMP_FILE"
-          cat ./dist/pdphyzx.h >> "$TEMP_FILE"
-          mv "$TEMP_FILE" ./dist/pdphyzx.h
-
-      - name: Release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ steps.version.outputs.new_tag }}
-          name: Release ${{ steps.version.outputs.new_tag }}
-          files: ./dist/pdphyzx.h
-          body: ${{ steps.version.outputs.changelog }}

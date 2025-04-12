@@ -49,7 +49,7 @@ these features.
 
 ## Installation
 
-1. Download the `pdphyzx.h` header file from the latest release
+1. Download the `dist/pdphyzx.h` header file
 2. Copy it into your Playdate project
 3. Include the header in your code:
 
@@ -89,6 +89,11 @@ PxShape circleShape = {.circle = {.radius = radius}};
 PxBody *circleBody = px->world->newDynamicBody(
     world, circleShape, 1.0f, pxVec2(100, 100));
 
+// Configure physics properties
+circleBody->restitution = 0.5f;        // Bounciness
+circleBody->dynamicFriction = 0.5f;    // Friction while moving
+circleBody->staticFriction = 0.7f;     // Friction while still
+
 // Create a box
 float width = 30.0f;
 float height = 20.0f;
@@ -102,11 +107,6 @@ float groundHeight = 10.0f;
 PxShape groundShape = {.box = {.width = groundWidth, .height = groundHeight}};
 PxBody *groundBody = px->world->newStaticBody(
     world, groundShape, pxVec2(200, 190));
-
-// Configure physics properties
-circleBody->restitution = 0.5f;        // Bounciness
-circleBody->dynamicFriction = 0.5f;    // Friction while moving
-circleBody->staticFriction = 0.7f;     // Friction while still
 ```
 
 ### Applying Forces and Impulses
