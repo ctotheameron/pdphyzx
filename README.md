@@ -1,4 +1,7 @@
 # pdphyzx
+![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/ctotheameron/pdphyzx/build-and-release.yml?branch=main&style=flat-square)
+![GitHub Release](https://img.shields.io/github/v/release/ctotheameron/pdphyzx?style=flat-square&color=%23fac852&link=https%3A%2F%2Fgithub.com%2Fctotheameron%2Fpdphyzx%2Freleases%2Flatest)
+
 
 <img src="https://github.com/user-attachments/assets/c07b3a99-bbab-4808-987c-981f15a7d249" width="500" />
 
@@ -49,11 +52,11 @@ these features.
 
 ## Installation
 
-1. Download the `dist/pdphyzx.h` header file
+1. Download `pdphyzx.h` header file fom the [latest release](https://github.com/ctotheameron/pdphyzx/releases/latest)
 2. Copy it into your Playdate project
 3. Include the header in your code:
 
-```c
+```cx
 #define PDPHYZX_IMPLEMENTATION
 #include "pdphyzx.h"
 ```
