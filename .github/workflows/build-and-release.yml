@@ -155,6 +155,7 @@ jobs:
           default_bump: false
 
       - name: Add version info to header file
+        if: steps.version.outputs.new_tag != ''
         run: |
           HEADER_COMMENT="/*\n * pdphyzx.h - Version ${{ steps.version.outputs.new_tag }}\n * Released under MIT License\n * https://github.com/${{ github.repository }}/releases/tag/${{ steps.version.outputs.new_tag }}\n */\n\n"
           TEMP_FILE=$(mktemp)
@@ -163,6 +164,7 @@ jobs:
           mv "$TEMP_FILE" ./dist/pdphyzx.h
 
       - name: Release
+        if: steps.version.outputs.new_tag != ''
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.version.outputs.new_tag }}
