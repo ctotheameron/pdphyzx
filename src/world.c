@@ -31,9 +31,9 @@ PxWorld *pxWorldInit(PxWorld *world, uint8_t iterations, uint8_t targetFps,
   world->contacts = (PxManifoldPool){0};
 
   // Default sleep settings
-  world->linearSleepThresholdSq = 0.0001f; // 1cm/s
-  world->angularSleepThreshold = 0.01f;    // ~0.6 degrees/s
-  world->timeToSleep = 0.5f;               // half a second
+  world->linearSleepThresholdSq = 0.0001f * scale * scale; // 1cm/s
+  world->angularSleepThreshold = 0.01f * scale;            // ~0.6 degrees/s
+  world->timeToSleep = 0.5f;                               // half a second
 
   pxClockInit(&world->clock, targetFps);
 
@@ -125,16 +125,75 @@ static void pxDetectRestingContacts(PxWorld *world, PxVec2 g, float dt) {
  * @param dt - time step in seconds
  */
 static void pxUpdateSleepStates(PxWorld *world, float dt) {
-  pxBodyArrayEach(&world->dynamicBodies, body) {
+  // Bit-arrays to track body states (using uint64_t to handle up to 64 bodies)
+  uint64_t hasRestingStaticContact = 0;
+  uint64_t shouldWakeUp = 0;
+
+  // Single pass through manifolds to collect all needed information
+  pxManifoldPoolEach(&world->contacts, manifold) {
+    PxBody *bodyA = manifold->bodyA;
+    PxBody *bodyB = manifold->bodyB;
+
+    bool isResting = (manifold->mixedRestitution == 0.0f);
+
+    bool isDynBodyA = pxBodyIsDynamic(bodyA);
+    bool isDynBodyB = pxBodyIsDynamic(bodyB);
+
+    // Case 1: Dynamic body resting on static body
+    if (isDynBodyA && !isDynBodyB && isResting) {
+      hasRestingStaticContact |= (1ULL << bodyA->worldIndex);
+    } else if (bodyB->density > 0 && bodyA->density == 0 && isResting) {
+      hasRestingStaticContact |= (1ULL << bodyB->worldIndex);
+    }
+
+    // Case 2: Dynamic-dynamic collision where one is already awake
+    else if (isDynBodyA && isDynBodyB && !isResting) {
+      if (pxBodyIsSleeping(bodyA)) {
+        shouldWakeUp |= (1ULL << bodyB->worldIndex);
+      }
+
+      if (pxBodyIsSleeping(bodyB)) {
+        shouldWakeUp |= (1ULL << bodyA->worldIndex);
+      }
+    }
+  }
+
+  // Single pass through bodies to update sleep states
+  pxBodyArrayEachWithIdx(&world->dynamicBodies, body, idx) {
+    // Check if body should be woken up due to collision
+    if (shouldWakeUp & (1ULL << idx)) {
+      pxBodyWakeUp(body);
+      continue;
+    }
+
+    // Check velocity thresholds
     bool isBelowThreshold =
         (pxVec2LenSqr(body->velocity) <= world->linearSleepThresholdSq) &&
         (fabsf(body->angularVelocity) <= world->angularSleepThreshold);
 
-    if (isBelowThreshold) {
-      body->sleepTime += dt;
-    } else {
+    if (!isBelowThreshold) {
       pxBodyWakeUp(body);
+      continue;
     }
+
+    if (pxBodyIsSleeping(body)) {
+      // No need to continue adding if the body is already sleeping
+      continue;
+    }
+
+    // Normal sleep time increase
+    body->sleepTime += dt;
+
+    // Extra sleep time if resting on static body
+    if (hasRestingStaticContact & (1ULL << idx)) {
+      body->sleepTime += dt; // Double sleep time accumulation
+    }
+
+    if (body->sleepTime >= world->timeToSleep) {
+      pxBodySetFlag(body, PX_BODY_FLAG_SLEEPING, true);
+    }
+
+    continue;
   }
 }
 
@@ -169,6 +228,11 @@ static void pxIntegrateForces(PxWorld *world, PxVec2 g, float dt) {
 static void pxApplyImpulses(PxWorld *world) {
   for (uint8_t j = 0; j < world->iterations; j++) {
     pxManifoldPoolEach(&world->contacts, manifold) {
+      if (pxBodyIsSleeping(manifold->bodyA) &&
+          pxBodyIsSleeping(manifold->bodyB)) {
+        continue;
+      }
+
       pxManifoldApplyImpulse(manifold);
     }
   }
@@ -256,15 +320,6 @@ static void pxDetectCollision(PxWorld *world, PxBody *bodyA, PxBody *bodyB) {
   // Nothing collided, release the manifold
   if (manifold->contacts.length == 0) {
     pxManifoldPoolReleaseLast(&world->contacts);
-
-  // Wake up bodies if they collide.
-  // Only wake up a sleeping body if it collided with an awake one
-  if (bodyA->sleepTime < world->timeToSleep) {
-    pxBodyWakeUp(bodyB);
-  }
-
-  if (bodyB->sleepTime < world->timeToSleep) {
-    pxBodyWakeUp(bodyA);
   }
 }
 
