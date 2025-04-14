@@ -57,6 +57,7 @@ PxBody pxBodyNew(PxShape shape, PxBodyFlags type, float density,
       .staticFriction = 0.5,
       .restitution = 0.2,
       .torque = 0,
+      .sleepTime = 0.0f,
 
       // Initialize orientation to identity matrix
       .orientationAngle = 0,
@@ -150,13 +151,6 @@ void pxBodyApplyImpulse(PxBody *body, PxVec2 impulse, PxVec2 contact) {
 
   body->angularVelocity +=
       pxVec2Cross(contact, impulse) * body->iMomentOfInertia;
-
-  // Only wake the body if impulse is significant
-  float impulseSquaredMagnitude = pxVec2LenSqr(impulse);
-
-  if (impulseSquaredMagnitude > PX_BODY_WAKE_THRESHOLD) {
-    pxBodyWakeUp(body);
-  }
 }
 
 void pxBodyApplyForce(PxBody *body, PxVec2 force, PxVec2 contact) {
