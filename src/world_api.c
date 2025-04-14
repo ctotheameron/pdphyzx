@@ -18,6 +18,8 @@ PxWorldAPI *newPxWorldAPI(void) {
     assert(0 && "Failed to allocate memory for PxWorldAPI");
   }
 
+  pxInitSinTable();
+
   // Initialize all function pointers
   api->new = &pxWorldNew;
   api->free = &pxWorldFree;

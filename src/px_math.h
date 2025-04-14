@@ -12,6 +12,7 @@
 #ifndef PDPHYZX_MATH_H
 #define PDPHYZX_MATH_H
 
+#include <math.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -21,8 +22,14 @@
 #define PX_PI 3.141592741f
 #define PX_2_PI PX_PI * 2.0f
 #define PX_H_PI PX_PI * 0.5f
+#define PX_3_H_PI PX_PI * 1.5f
 #define PX_BIAS_RELATIVE 0.95f
 #define PX_BIAS_ABSOLUTE 0.01f
+
+// Fast trigonometric approximation constants
+#define PX_SIN_TABLE_SIZE 256
+#define PX_SIN_TABLE_MASK (PX_SIN_TABLE_SIZE - 1)
+#define PX_2PI_OVER_TABLE_SIZE (PX_2_PI / PX_SIN_TABLE_SIZE)
 
 //-------------------------------------------------------------------------------
 // Fast Inverse Square Root
@@ -182,6 +189,64 @@ static inline float pxMin(float a, float b) { return a < b ? a : b; }
  */
 static inline float pxRandf(float low, float high) {
   return low + (high - low) * pxFastDiv(rand(), (float)RAND_MAX);
+}
+
+//-------------------------------------------------------------------------------
+// Trigonometric
+//-------------------------------------------------------------------------------
+
+/**
+ * @brief Lookup table for sine values
+ *
+ * This table stores pre-calculated sine values for angles 0 to 2π,
+ * divided into PX_SIN_TABLE_SIZE increments for fast access.
+ */
+static float pxSinTable[PX_SIN_TABLE_SIZE];
+
+/**
+ * @brief Initialize the sine lookup table.
+ *
+ * Must be called once during engine initialization.
+ */
+static inline void pxInitSinTable(void) {
+  for (int i = 0; i < PX_SIN_TABLE_SIZE; i++) {
+    float angle = (i * PX_2_PI) / PX_SIN_TABLE_SIZE;
+    pxSinTable[i] = sinf(angle);
+  }
+}
+
+/**
+ * @brief Fast approximation of sine using lookup table.
+ *
+ * @param radians - angle in radians.
+ * @return approximate sine value.
+ */
+static inline float pxFastSin(float radians) {
+  // Normalize angle to [0, 2π) range
+  if ((radians = fmodf(radians, PX_2_PI)) < 0) {
+    radians += PX_2_PI;
+  }
+
+  // Convert angle to table position
+  float position = pxFastDiv(radians, PX_2PI_OVER_TABLE_SIZE);
+  int index1 = (int)position & PX_SIN_TABLE_MASK;
+  int index2 = (index1 + 1) & PX_SIN_TABLE_MASK;
+
+  // Linear interpolation between the two closest values
+  float fraction = position - (int)position;
+
+  return pxSinTable[index1] * (1.0f - fraction) + pxSinTable[index2] * fraction;
+}
+
+/**
+ * @brief Fast approximation of cosine using lookup table.
+ *
+ * @param radians - angle in radians.
+ * @return approximate cosine value.
+ */
+static inline float pxFastCos(float radians) {
+  // Cosine is just sine with a quarter circle phase shift
+  return pxFastSin(radians + PX_H_PI);
 }
 
 #endif // PDPHYZX_MATH_H
