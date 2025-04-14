@@ -107,8 +107,11 @@ void pxManifoldApplyImpulse(PxManifold *manifold) {
   PxBody *bodyA = manifold->bodyA;
   PxBody *bodyB = manifold->bodyB;
 
-  // Skip if both bodies are static (have zero inverse mass)
-  if (bodyA->iMass + bodyB->iMass <= 0) {
+  bool bodyADynamic = pxBodyIsDynamic(bodyA);
+  bool bodyBDynamic = pxBodyIsDynamic(bodyB);
+
+  // Skip if both bodies are non-dynamic
+  if (!bodyADynamic && !bodyBDynamic) {
     return;
   }
 
@@ -157,11 +160,11 @@ void pxManifoldApplyImpulse(PxManifold *manifold) {
     // Apply normal impulse
     PxVec2 impulse = pxVec2Multf(manifold->normal, j);
 
-    if (bodyA->iMass > 0) {
+    if (bodyADynamic) {
       pxBodyApplyImpulse(bodyA, pxVec2Neg(impulse), ra);
     }
 
-    if (bodyB->iMass > 0) {
+    if (bodyBDynamic) {
       pxBodyApplyImpulse(bodyB, impulse, rb);
     }
 
@@ -203,12 +206,11 @@ void pxManifoldApplyImpulse(PxManifold *manifold) {
     }
 
     // Apply friction impulse
-
-    if (bodyA->iMass > 0) {
+    if (bodyADynamic) {
       pxBodyApplyImpulse(bodyA, pxVec2Neg(frictionImpulse), ra);
     }
 
-    if (bodyB->iMass > 0) {
+    if (bodyBDynamic) {
       pxBodyApplyImpulse(bodyB, frictionImpulse, rb);
     }
   }
@@ -224,11 +226,11 @@ void pxManifoldCorrectPosition(PxManifold *manifold) {
   PxBody *bodyA = manifold->bodyA;
   PxBody *bodyB = manifold->bodyB;
 
-  // Calculate correction based on inverse mass ratio
-  float totalInvMass = bodyA->iMass + bodyB->iMass;
+  bool bodyADynamic = pxBodyIsDynamic(bodyA);
+  bool bodyBDynamic = pxBodyIsDynamic(bodyB);
 
-  if (totalInvMass <= PX_EPSILON) {
-    return; // Both bodies are static
+  if (!bodyADynamic && !bodyBDynamic) {
+    return; // Both bodies are non-dynamic
   }
 
   // Calculate positional correction:
@@ -237,18 +239,19 @@ void pxManifoldCorrectPosition(PxManifold *manifold) {
 
   // 2. Scale by PX_POSITIONAL_CORRECTION_FACTOR (Baumgarte factor)
   // 3. Divide by total inverse mass to get impulse-like correction
-  float correctionalMagnitude = pxFastDiv(
-      excessPenetration * PX_POSITIONAL_CORRECTION_FACTOR, totalInvMass);
+  float correctionalMagnitude =
+      pxFastDiv(excessPenetration * PX_POSITIONAL_CORRECTION_FACTOR,
+                bodyA->iMass + bodyB->iMass);
 
   PxVec2 correctionVector =
       pxVec2Multf(manifold->normal, correctionalMagnitude);
 
   // Apply position correction proportional to inverse mass
-  if (bodyA->iMass > 0) {
+  if (bodyADynamic) {
     pxBodyMoveBy(bodyA, pxVec2Neg(pxVec2Multf(correctionVector, bodyA->iMass)));
   }
 
-  if (bodyB->iMass > 0) {
+  if (bodyBDynamic) {
     pxBodyMoveBy(bodyB, pxVec2Multf(correctionVector, bodyB->iMass));
   }
 }
