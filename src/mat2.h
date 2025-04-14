@@ -45,32 +45,17 @@ static inline PxMat2 pxMat2Identity(void) {
  * `[ cos(r) -sin(r) ]`
  * `[ sin(r)  cos(r) ]`
  *
+ * Uses lookup table approximations of sine and cosine for better performance.
+ *
  * @param radians - angle in radians.
  *
  * @return 2x2 rotation matrix.
  */
 static inline PxMat2 pxMat2Orientation(float radians) {
-  float c = cosf(radians);
-  float s = sinf(radians);
+  float c = pxFastCos(radians);
+  float s = pxFastSin(radians);
 
   return (PxMat2){.m00 = c, .m01 = -s, .m10 = s, .m11 = c};
-}
-
-/**
- * @brief Sets the orientation of an existing 2x2 matrix to a rotation defined
- * by an angle in radians.
- *
- * @param mat2    - pointer to the 2x2 matrix.
- * @param radians - angle in radians.
- */
-static inline void mat2SetOrientation(PxMat2 *mat2, float radians) {
-  float c = cosf(radians);
-  float s = sinf(radians);
-
-  mat2->m00 = c;
-  mat2->m01 = -s;
-  mat2->m10 = s;
-  mat2->m11 = c;
 }
 
 /**
