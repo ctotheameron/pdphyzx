@@ -16,7 +16,10 @@
 #include "body.h"
 
 typedef struct {
+  bool (*isValid)(PxBody *body);
+  void (*setPosition)(PxBody *body, PxVec2 position);
   void (*setOrientation)(PxBody *body, float radians);
+  void (*moveBy)(PxBody *body, PxVec2 distance);
   void (*rotate)(PxBody *body, float radians);
   void (*applyForce)(PxBody *body, PxVec2 force, PxVec2 contact);
   void (*applyImpulse)(PxBody *body, PxVec2 impulse, PxVec2 force);

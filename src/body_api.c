@@ -19,7 +19,10 @@ PxBodyAPI *newPxBodyAPI(void) {
   }
 
   // Initialize all function pointers
+  api->isValid = &pxBodyIsValid;
+  api->setPosition = &pxBodySetPosition;
   api->setOrientation = &pxBodySetOrientation;
+  api->moveBy = &pxBodyMoveBy;
   api->rotate = &pxBodyRotate;
   api->applyForce = &pxBodyApplyForce;
   api->applyImpulse = &pxBodyApplyImpulse;
