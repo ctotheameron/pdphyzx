@@ -9,7 +9,8 @@
 
 #include "body.h"
 
-PxBody pxBodyNew(PxShape shape, float density, PxVec2 position) {
+PxBody pxBodyNew(PxShape shape, PxBodyFlags type, float density,
+                 PxVec2 position) {
   PxCollider collider;
 
   if (shape.box.width != 0 && shape.box.height != 0) {
@@ -20,19 +21,29 @@ PxBody pxBodyNew(PxShape shape, float density, PxVec2 position) {
     collider =
         pxPolygonColliderNew(shape.polygon.vertices, shape.polygon.vertexCount);
   } else {
-    return (PxBody){.isValid = false};
+    return (PxBody){0};
   }
 
   PxAABB aabb = {0};
   collider.updateAABB(&collider, &aabb, position);
 
-  PxMassData massData =
-      density > 0 ? collider.computeMass(&collider, density)
-                  : (PxMassData){0}; // infer static body when density is 0
+  PxMassData massData = (PxMassData){0};
+  switch (type) {
+  case PX_BODY_DYNAMIC:
+    if (density <= 0) {
+      return (PxBody){0}; // Invalid density for dynamic body
+    }
 
-  if (density != 0 && (massData.mass <= 0 || massData.momentOfInertia <= 0)) {
-    return (PxBody){.isValid = false};
+    // Only dynamic bodies get real mass data
+    massData = collider.computeMass(&collider, density);
+    break;
+
+  default:
+    break;
   }
+
+  // Set up flags
+  uint8_t flags = PX_BODY_FLAG_VALID | (type & PX_BODY_TYPE_MASK);
 
   return (PxBody){
       .aabb = aabb,
@@ -65,7 +76,7 @@ PxBody pxBodyNew(PxShape shape, float density, PxVec2 position) {
       // is added to a world.
       .worldIndex = PX_INVALID_WORLD_INDEX,
 
-      .isValid = true,
+      .flags = flags,
   };
 }
 
@@ -110,7 +121,7 @@ void pxBodyRotate(PxBody *body, float radians) {
 }
 
 bool pxBodyAABBsOverlap(PxBody *bodyA, PxBody *bodyB) {
-  if (!bodyA || !bodyB || !bodyA->isValid || !bodyB->isValid) {
+  if (!bodyA || !bodyB || !pxBodyIsValid(bodyA) || !pxBodyIsValid(bodyB)) {
     return false;
   }
 
@@ -131,6 +142,10 @@ bool pxBodyAABBsOverlap(PxBody *bodyA, PxBody *bodyB) {
 }
 
 void pxBodyApplyImpulse(PxBody *body, PxVec2 impulse, PxVec2 contact) {
+  if (!body || !pxBodyIsDynamic(body)) {
+    return;
+  }
+
   pxVec2AddAssign(&body->velocity, pxVec2Multf(impulse, body->iMass));
 
   body->angularVelocity +=
@@ -145,14 +160,16 @@ void pxBodyApplyImpulse(PxBody *body, PxVec2 impulse, PxVec2 contact) {
 }
 
 void pxBodyApplyForce(PxBody *body, PxVec2 force, PxVec2 contact) {
+  if (!body || !pxBodyIsDynamic(body)) {
+    return;
+  }
+
   pxVec2AddAssign(&body->force, force);
   body->torque += pxVec2Cross(contact, force);
-
-  pxBodyWakeUp(body);
 }
 
 void pxBodyIntegrateForces(PxBody *body, PxVec2 g, float dt) {
-  if (body->iMomentOfInertia == 0) {
+  if (!body || pxBodyIsStatic(body) || pxBodyIsSleeping(body)) {
     return;
   }
 
@@ -166,7 +183,7 @@ void pxBodyIntegrateForces(PxBody *body, PxVec2 g, float dt) {
 }
 
 void pxBodyIntegrateVelocity(PxBody *body, float dt) {
-  if (body->iMomentOfInertia == 0) {
+  if (!body || pxBodyIsStatic(body) || pxBodyIsSleeping(body)) {
     return;
   }
 
@@ -179,10 +196,13 @@ void pxBodyClearForces(PxBody *body) {
   body->torque = 0;
 }
 
-void pxBodyWakeUp(PxBody *body) { body->sleepTime = 0.0f; }
+void pxBodyWakeUp(PxBody *body) {
+  body->sleepTime = 0.0f;
+  pxBodySetFlag(body, PX_BODY_FLAG_SLEEPING, false);
+}
 
 PxBody *pxBodyArrayAdd(PxBodyArray *array, PxBody *body) {
-  if (!body->isValid) {
+  if (!pxBodyIsValid(body)) {
     return NULL;
   }
 
@@ -253,17 +273,6 @@ void pxBodyArrayRemove(PxBodyArray *array, uint8_t index) {
   }
 }
 
-/**
- * Sort a body array's activeIndices by the min X coordinate of each body's
- * AABB.
- *
- * This preserves body pointers since only the iteration order changes.
- *
- * @param bodies
- *
- * Note: Using insertion sort as it's efficient for small arrays (PX_MAX_BODIES
- *       is small) and performs well when data is already partially sorted.
- */
 void pxBodyArraySortByAxis(PxBodyArray *bodies) {
   for (uint8_t i = 1; i < bodies->length; i++) {
     uint8_t currentActiveIndex = bodies->activeIndices[i];

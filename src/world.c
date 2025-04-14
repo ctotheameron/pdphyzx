@@ -62,24 +62,23 @@ void pxWorldFree(PxWorld *world) {
  *
  * @return PxBody* Pointer to the newly added body
  */
-static PxBody *pxWorldAddBody(PxWorld *world, PxShape shape, float density,
-                              PxVec2 position) {
-  PxBody body = pxBodyNew(shape, density, position);
+static PxBody *pxWorldAddBody(PxWorld *world, PxShape shape, PxBodyFlags type,
+                              float density, PxVec2 position) {
 
-  // TODO: figure out how to generalize this better -
-  // Scale restitution and friction
+  PxBody body = pxBodyNew(shape, type, density, position);
+
   body.restitution *= world->scale;
   body.staticFriction = pxFastDiv(body.staticFriction, world->scale);
   body.dynamicFriction = pxFastDiv(body.dynamicFriction, world->scale);
 
   PxBodyArray *bodies =
-      density > 0 ? &world->dynamicBodies : &world->staticBodies;
+      type == PX_BODY_DYNAMIC ? &world->dynamicBodies : &world->staticBodies;
 
   return pxBodyArrayAdd(bodies, &body);
 }
 
 PxBody *pxWorldNewStaticBody(PxWorld *world, PxShape shape, PxVec2 position) {
-  PxBody *body = pxWorldAddBody(world, shape, 0, position);
+  PxBody *body = pxWorldAddBody(world, shape, PX_BODY_STATIC, 0, position);
 
   // Sort static bodies array when adding new body
   pxBodyArraySortByAxis(&world->staticBodies);
@@ -92,7 +91,7 @@ PxBody *pxWorldNewDynamicBody(PxWorld *world, PxShape shape, float density,
 
   assert(density > 0 && "Dynamic bodies must have positive density");
 
-  return pxWorldAddBody(world, shape, density, position);
+  return pxWorldAddBody(world, shape, PX_BODY_DYNAMIC, density, position);
 }
 
 void pxWorldFreeBody(PxWorld *world, PxBody *body) {
@@ -151,8 +150,7 @@ static void pxUpdateSleepStates(PxWorld *world, float dt) {
  */
 static void pxIntegrateForces(PxWorld *world, PxVec2 g, float dt) {
   pxBodyArrayEach(&world->dynamicBodies, body) {
-    // Skip sleeping bodies
-    if (!body || body->sleepTime >= world->timeToSleep) {
+    if (pxBodyIsSleeping(body)) {
       continue;
     }
 
@@ -187,8 +185,7 @@ static void pxApplyImpulses(PxWorld *world) {
  */
 static void pxIntegrateVelocities(PxWorld *world, float dt) {
   pxBodyArrayEach(&world->dynamicBodies, body) {
-    // Skip sleeping bodies
-    if (body->sleepTime >= world->timeToSleep) {
+    if (pxBodyIsSleeping(body)) {
       continue;
     }
 
@@ -248,11 +245,6 @@ static void pxDetectCollision(PxWorld *world, PxBody *bodyA, PxBody *bodyB) {
     return;
   }
 
-  // Debug - log collider types when both boxes (might be player vs ground)
-  if (bodyA->collider.type == PX_POLYGON &&
-      bodyB->collider.type == PX_POLYGON) {
-  }
-
   PxManifold *manifold = pxManifoldPoolAcquire(&world->contacts);
   if (!manifold) {
     assert(0 && "Manifold pool exhausted");
@@ -263,13 +255,7 @@ static void pxDetectCollision(PxWorld *world, PxBody *bodyA, PxBody *bodyB) {
 
   // Nothing collided, release the manifold
   if (manifold->contacts.length == 0) {
-    if (bodyA->collider.type == PX_POLYGON &&
-        bodyB->collider.type == PX_POLYGON) {
-    }
-
     pxManifoldPoolReleaseLast(&world->contacts);
-    return;
-  }
 
   // Wake up bodies if they collide.
   // Only wake up a sleeping body if it collided with an awake one
@@ -296,17 +282,13 @@ static void pxGenerateCollisionInfo(PxWorld *world) {
 
   // For each dynamic body
   pxBodyArrayEachWithIdx(&world->dynamicBodies, bodyA, idx) {
-    // Skip sleeping vs sleeping collision checks,
-    // but still check sleeping vs awake
-    bool bodyASleeping = bodyA->sleepTime >= world->timeToSleep;
-
     float minX = bodyA->aabb.min.x;
     float maxX = bodyA->aabb.max.x;
 
     // Check against other dynamic bodies with potential overlap
     pxBodyArrayEachFrom(&world->dynamicBodies, idx + 1, bodyB) {
       // If both bodies are sleeping, skip this pair
-      if (bodyASleeping && bodyB->sleepTime >= world->timeToSleep) {
+      if (pxBodyIsSleeping(bodyA) && pxBodyIsSleeping(bodyB)) {
         continue;
       }
 
@@ -384,9 +366,6 @@ bool pxWorldStep(PxWorld *world, PxVec2 g) {
     stepCount++;
   }
 
-  // Log number of steps:
-  pxlog("%d steps taken", stepCount);
-
   return stepped;
 }
 
@@ -397,7 +376,6 @@ bool pxWorldStep(PxWorld *world, PxVec2 g) {
 void pxWorldDrawDebug(PxWorld *world) {
   // Track sleep statistics
   uint8_t sleepingCount = 0;
-  uint8_t frozenCount = 0;
 
   // Draw AABBs for all bodies in the static array
   pxBodyArrayEach(&world->staticBodies, body) {
@@ -415,35 +393,12 @@ void pxWorldDrawDebug(PxWorld *world) {
     pd->graphics->drawRect(aabb.min.x, aabb.min.y, aabb.max.x - aabb.min.x,
                            aabb.max.y - aabb.min.y, kColorXOR);
 
-    // Get body velocity info
-    float velLen = pxVec2Len(body->velocity);
-
-    // Check if body is sleeping
-    bool isSleeping = body->sleepTime >= world->timeToSleep;
-    if (isSleeping) {
+    if (pxBodyIsSleeping(body)) {
       sleepingCount++;
 
-      // Draw Z on sleeping bodies
-      float centerX = (aabb.min.x + aabb.max.x) / 2;
-      float centerY = (aabb.min.y + aabb.max.y) / 2;
-
-      pd->graphics->drawLine(centerX - 5, centerY - 5, centerX + 5, centerY - 5,
-                             1, kColorBlack);
-      pd->graphics->drawLine(centerX + 5, centerY - 5, centerX - 5, centerY + 5,
-                             1, kColorBlack);
-      pd->graphics->drawLine(centerX - 5, centerY + 5, centerX + 5, centerY + 5,
-                             1, kColorBlack);
-    }
-
-    // Check for "frozen" bodies - nearly zero velocity but not enough sleep
-    // time
-    bool isNearlyStatic = (velLen < 0.001f);
-    if (isNearlyStatic && !isSleeping) {
-      frozenCount++;
-
-      // Mark frozen bodies with a square
-      float centerX = (aabb.min.x + aabb.max.x) / 2;
-      float centerY = (aabb.min.y + aabb.max.y) / 2;
+      // Mark sleeping bodies with a square
+      float centerX = (aabb.min.x + aabb.max.x) / 2.0f;
+      float centerY = (aabb.min.y + aabb.max.y) / 2.0f;
       float size = 4;
 
       pd->graphics->drawRect(centerX - size, centerY - size, size * 2, size * 2,
@@ -451,6 +406,7 @@ void pxWorldDrawDebug(PxWorld *world) {
     }
 
     // Draw velocity vector (scaled for visibility)
+    float velLen = pxVec2Len(body->velocity);
     if (velLen > 0.01f) {
       float centerX = (aabb.min.x + aabb.max.x) / 2;
       float centerY = (aabb.min.y + aabb.max.y) / 2;
@@ -461,9 +417,8 @@ void pxWorldDrawDebug(PxWorld *world) {
 
   // Display statistics
   char *countText = NULL;
-  int len = pd->system->formatString(
-      &countText, "Contacts: %d  Sleeping: %d  Frozen: %d",
-      world->contacts.length, sleepingCount, frozenCount);
+  int len = pd->system->formatString(&countText, "Contacts: %d  Sleeping: %d ",
+                                     world->contacts.length, sleepingCount);
 
   pd->graphics->drawText(countText, len, kASCIIEncoding, 5, 20);
 }
