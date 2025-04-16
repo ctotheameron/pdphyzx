@@ -1,10 +1,9 @@
-#ifndef PDPHYZX_MANIFOLD_H
-#define PDPHYZX_MANIFOLD_H
+#ifndef PDPHYZX_PX_MANIFOLD_H
+#define PDPHYZX_PX_MANIFOLD_H
 
 #include <stdint.h>
 
-#include "body.h"
-#include "vec2.h"
+#include "px_body.h"
 
 /**
  * Maximum number of contact points stored in a manifold.
@@ -99,4 +98,4 @@ void pxManifoldApplyImpulse(PxManifold *manifold);
  */
 void pxManifoldCorrectPosition(PxManifold *manifold);
 
-#endif // PDPHYZX_MANIFOLD_H
+#endif // PDPHYZX_PX_MANIFOLD_H

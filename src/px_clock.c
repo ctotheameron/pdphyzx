@@ -2,10 +2,10 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#include "platform.h"
 #include "px_math.h"
+#include "px_platform.h"
 
-#include "clock.h"
+#include "px_clock.h"
 
 PxClock *pxClockInit(PxClock *clock, uint8_t targetFps) {
   if (!clock) {

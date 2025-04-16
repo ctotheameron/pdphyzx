@@ -11,17 +11,16 @@
 #define NOB_EXPERIMENTAL_DELETE_OLD
 #include "nob.h"
 
-#define H_GLOB "src/*.h"
+#define H_GLOB "src/includes/*.h"
 #define C_GLOB "src/*.c"
-#define SRC_GLOB "{src/*.c,examples/*/*.c}"
+#define SRC_GLOB "{src/**/*.c,src/**/*.h,examples/**/*.c, examples/**/*.h}"
 
 #define SYSCALLS_STUB_FILE "syscalls_stub.c"
 
 // - Compiler flags ------------------------------------------------------------
 #define COMMON_CFLAGS                                                          \
-  "-Wall", "-Wextra", "-pedantic", "-Ipdphyzx", "-std=gnu11",                  \
-      "-Wstrict-prototypes", "-Wno-unknown-pragmas", "-Wdouble-promotion",     \
-      "-DTARGET_EXTENSION=1"
+  "-Wall", "-Wextra", "-pedantic", "-std=gnu11", "-Wstrict-prototypes",        \
+      "-Wno-unknown-pragmas", "-Wdouble-promotion", "-DTARGET_EXTENSION=1"
 
 //- Debug/Release --------------------------------------------------------------
 #define DEV_FLAGS "-g", "-O0", "-DDEBUG"
@@ -368,6 +367,9 @@ bool genLspInfo(void) {
     return false;
   }
 
+  // Add source includes
+  cmd_append(&lspCmd, "-Isrc/includes");
+
   // Get source files
   glob_t srcGlob;
   if (glob(SRC_GLOB, GLOB_BRACE | GLOB_NOSORT, NULL, &srcGlob) != 0) {
@@ -524,6 +526,9 @@ bool build(Options options) {
   if (!configureBuild(&cmd, mode, target)) {
     return false;
   }
+
+  // Add dist
+  cmd_append(&cmd, "-I", DIST_DIR);
 
   // Add syscalls stub file for device debug builds
   if (target == DEVICE && mode == DEV) {

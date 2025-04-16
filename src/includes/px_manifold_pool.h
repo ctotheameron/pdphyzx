@@ -1,9 +1,9 @@
-#ifndef PDPHYZX_MANIFOLD_POOL_H
-#define PDPHYZX_MANIFOLD_POOL_H
+#ifndef PDPHYZX_PX_MANIFOLD_POOL_H
+#define PDPHYZX_PX_MANIFOLD_POOL_H
 
 #include <stdint.h>
 
-#include "manifold.h"
+#include "px_manifold.h"
 
 #define PX_MAX_MANIFOLDS 64
 
@@ -28,4 +28,4 @@ PxManifold *pxManifoldPoolAcquire(PxManifoldPool *pool);
 void pxManifoldPoolReleaseLast(PxManifoldPool *pool);
 void pxManifoldPoolClear(PxManifoldPool *pool);
 
-#endif // PDPHYZX_MANIFOLD_POOL_H
+#endif // PDPHYZX_PX_MANIFOLD_POOL_H

@@ -1,8 +1,4 @@
-#include "collider.h"
-#include "px_math.h"
-#include "vec2.h"
-
-#include "circle.h"
+#include "px_circle.h"
 
 /**
  * Computes mass properties for a circular collider.

@@ -15,7 +15,6 @@ static bool showDebugInfo = false;
 // Structure for player-controlled box
 typedef struct {
   PxBody *body;
-  bool isGrounded;
 } Player;
 
 static Player player = {0};
@@ -94,6 +93,8 @@ static void spawnCircle(void) {
   PxBody *body =
       px->world->newDynamicBody(world, circleShape, 1.0f, pxVec2(x, y));
 
+  body->restitution = 1.0f;
+
   circles[index].body = body;
   circles[index].active = true;
   activeCircleCount++;
@@ -112,10 +113,8 @@ static void initPlayer(void) {
   body->restitution = 0.1f;
   body->dynamicFriction = 0.5f;
   body->staticFriction = 0.7f;
-  body->density = 0.1f;
 
   player.body = body;
-  player.isGrounded = false;
 }
 
 static void drawPlayer(void) {
@@ -123,26 +122,34 @@ static void drawPlayer(void) {
     return;
   }
 
+  PxCollider collider = player.body->collider;
   PxVec2 pos = player.body->position;
-  float width = player.body->aabb.max.x - player.body->aabb.min.x;
-  float height = player.body->aabb.max.y - player.body->aabb.min.y;
 
-  pd->graphics->fillRect(pos.x - width / 2, pos.y - height / 2, width, height,
-                         kColorBlack);
-}
+  // Handle drawing based on collider type
+  PxVec2Array vertices = collider.shape.polygon.vertices;
 
-static bool checkPlayerGrounded(void) {
-  if (player.body == NULL || groundBody == NULL) {
-    return false;
+  // Get the body's orientation to rotate vertices
+  PxMat2 orientation = player.body->orientation;
+
+  // Draw lines connecting each vertex
+  for (uint8_t i = 0; i < vertices.length; i++) {
+    // Get current and next vertex (loop back to first for the last one)
+    PxVec2 current = vertices.items[i];
+    PxVec2 next = vertices.items[(i + 1) % vertices.length];
+
+    // Apply rotation to vertices
+    PxVec2 rotatedCurrent = pxMat2MultVec2(orientation, current);
+    PxVec2 rotatedNext = pxMat2MultVec2(orientation, next);
+
+    // Add body position to get world coordinates
+    float x1 = pos.x + rotatedCurrent.x;
+    float y1 = pos.y + rotatedCurrent.y;
+    float x2 = pos.x + rotatedNext.x;
+    float y2 = pos.y + rotatedNext.y;
+
+    // Draw the edge
+    pd->graphics->drawLine(x1, y1, x2, y2, 1, kColorBlack);
   }
-
-  PxVec2 pos = player.body->position;
-  float height = player.body->aabb.max.y - player.body->aabb.min.y;
-
-  // Check if bottom of player is near ground surface
-  return (
-      pos.y + height / 2 >= groundBody->position.y - groundHeight / 2.0f - 2 &&
-      pos.y + height / 2 <= groundBody->position.y - groundHeight / 2.0f + 2);
 }
 
 static int update(void *userdata) {
@@ -153,10 +160,6 @@ static int update(void *userdata) {
 
   PDButtons current, pressed;
   pd->system->getButtonState(&current, &pressed, NULL);
-
-  // Check for player input
-  // Update grounded state
-  player.isGrounded = checkPlayerGrounded();
 
   // Left/Right movement
   if (current & kButtonLeft) {
@@ -242,7 +245,7 @@ int eventHandler(PlaydateAPI *playdate, PDSystemEvent event, uint32_t arg) {
     // Setup the physics engine
     g = pxVec2(0, 9.8); // Note: positive Y is down in pixel coordinates
     px = registerPdPhyzx(playdate);
-    world = px->world->new(10, 50, 8);
+    world = px->world->new(10, 50);
 
     groundWidth = 200;
     groundHeight = 10;

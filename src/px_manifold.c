@@ -1,11 +1,9 @@
 #include <stdint.h>
 
-#include "body.h"
-#include "collision.h"
-#include "px_math.h"
-#include "vec2.h"
+#include "px_body.h"
+#include "px_collision.h"
 
-#include "manifold.h"
+#include "px_manifold.h"
 
 //==============================================================================
 // Allocation

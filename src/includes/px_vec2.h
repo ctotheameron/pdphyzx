@@ -1,5 +1,5 @@
 /**
- * @file vec2.h
+ * @file px_vec2.h
  *
  * @brief This file contains functions for handling 2D vector operations.
  *
@@ -9,8 +9,8 @@
  * more.
  */
 
-#ifndef PDPHYZX_VEC2_H
-#define PDPHYZX_VEC2_H
+#ifndef PDPHYZX_PX_VEC2_H
+#define PDPHYZX_PX_VEC2_H
 
 #include <math.h>
 #include <stdint.h>
@@ -524,4 +524,4 @@ static inline void pxVec2ArraySet(PxVec2Array *array, uint8_t index,
   array->items[index] = value;
 }
 
-#endif // PDPHYZX_VEC2_H
+#endif // PDPHYZX_PX_VEC2_H

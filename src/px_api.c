@@ -1,7 +1,6 @@
+#include "px_platform.h"
+
 #include "px_api.h"
-#include "body_api.h"
-#include "platform.h"
-#include "world_api.h"
 
 PlaydateAPI *pd = NULL;
 

@@ -135,7 +135,7 @@ int eventHandler(PlaydateAPI *playdate, PDSystemEvent event, uint32_t arg) {
     // Setup the physics engine
     g = pxVec2(0, 9.8);
     px = registerPdPhyzx(playdate);
-    world = px->world->new(232, 99, 7);
+    world = px->world->new(232, 99);
 
     ground = newGround(world, pxVec2(200, 150));
 

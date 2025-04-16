@@ -1,12 +1,7 @@
 #include <assert.h>
 #include <float.h>
-#include <stdint.h>
 
-#include "collider.h"
-#include "px_math.h"
-#include "vec2.h"
-
-#include "polygon.h"
+#include "px_polygon.h"
 
 /**
  * Creates polygon data from a set of vertices.

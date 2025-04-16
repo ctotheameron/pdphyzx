@@ -1,14 +1,9 @@
 #include <float.h>
 #include <stdint.h>
 
-#include "body.h"
-#include "manifold.h"
-#include "mat2.h"
-#include "polygon.h"
-#include "px_math.h"
-#include "vec2.h"
+#include "px_manifold.h"
 
-#include "collision.h"
+#include "px_polygon.h"
 
 /**
  * Detects and handles the collision between two circles.

@@ -1,3 +1,6 @@
+#ifndef PDPHYZX_PX_CLOCK_H
+#define PDPHYZX_PX_CLOCK_H
+
 #include <stdbool.h>
 #include <stdint.h>
 
@@ -21,3 +24,5 @@ float pxClockGetFixedDeltaTime(PxClock *clock);
 void pxClockAdvance(PxClock *clock);
 
 void pxClockSetTargetFPS(PxClock *clock, uint8_t targetFps);
+
+#endif // PDPHYZX_PX_CLOCK_H
