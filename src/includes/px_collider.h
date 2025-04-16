@@ -1,5 +1,5 @@
 /**
- * @file collider.h
+ * @file types/px_collider.h
  *
  * @brief Defines the interface for collider objects in the pdphyzx engine.
  *
@@ -14,12 +14,12 @@
  * detection and response system within the pdphyzx engine.
  */
 
-#ifndef PDPHYZX_COLLIDER_H
-#define PDPHYZX_COLLIDER_H
+#ifndef PDPHYZX_PX_COLLIDER_H
+#define PDPHYZX_PX_COLLIDER_H
 
 #include <stdint.h>
 
-#include "vec2.h"
+#include "px_vec2.h"
 
 /**
  * @brief Defines the type of physical collider

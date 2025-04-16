@@ -1,5 +1,5 @@
 /**
- * @file world.h
+ * @file px_world.h
  * @brief Physics world management for the PDPhyzx 2D physics engine
  *
  * This header defines the public interface for the physics world component,
@@ -14,12 +14,12 @@
  * them, and resolves those collisions according to physical principles.
  */
 
-#ifndef PDPHYZX_WORLD_H
-#define PDPHYZX_WORLD_H
+#ifndef PDPHYZX_PX_WORLD_H
+#define PDPHYZX_PX_WORLD_H
 
-#include "body.h"
-#include "clock.h"
-#include "manifold_pool.h"
+#include "px_body_array.h"
+#include "px_clock.h"
+#include "px_manifold_pool.h"
 
 /**
  * @brief Physics world container that manages physical bodies and simulations
@@ -34,7 +34,6 @@ typedef struct {
   PxManifoldPool contacts;
 
   uint8_t iterations;
-  float scale;
 
   float linearSleepThresholdSq; // m/s (squared)
   float angularSleepThreshold;  // rad/s
@@ -48,11 +47,10 @@ typedef struct {
  *
  * @param iterations - number of constraint solving iterations per step
  * @param targetFps  - target frames per second for simulation stability
- * @param scale      - scale factor for physics world units
  *
  * @return pointer to newly created PxWorld or NULL if allocation fails
  */
-PxWorld *pxWorldNew(uint8_t iterations, uint8_t targetFps, float scale);
+PxWorld *pxWorldNew(uint8_t iterations, uint8_t targetFps);
 
 /**
  * @brief Destroys a physics world and frees associated memory
@@ -120,4 +118,4 @@ bool pxWorldStep(PxWorld *world, PxVec2 g);
 
 void pxWorldDrawDebug(PxWorld *world);
 
-#endif // PDPHYZX_WORLD_H
+#endif // PDPHYZX_PX_WORLD_H

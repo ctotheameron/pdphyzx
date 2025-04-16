@@ -1,9 +1,9 @@
 #include <assert.h>
 
-#include "body.h"
-#include "platform.h"
+#include "px_body.h"
+#include "px_platform.h"
 
-#include "body_api.h"
+#include "px_body_api.h"
 
 const PxBodyAPI *px_body;
 

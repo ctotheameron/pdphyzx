@@ -9,8 +9,8 @@
  * number generation.
  */
 
-#ifndef PDPHYZX_MATH_H
-#define PDPHYZX_MATH_H
+#ifndef PDPHYZX_PX_MATH_H
+#define PDPHYZX_PX_MATH_H
 
 #include <math.h>
 #include <stdbool.h>
@@ -249,4 +249,4 @@ static inline float pxFastCos(float radians) {
   return pxFastSin(radians + PX_H_PI);
 }
 
-#endif // PDPHYZX_MATH_H
+#endif // PDPHYZX_PX_MATH_H

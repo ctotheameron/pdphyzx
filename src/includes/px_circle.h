@@ -1,5 +1,5 @@
 /**
- * @file circle.h
+ * @file px_circle.h
  *
  * @brief Circle collider implementation for the pdphyzx engine
  *
@@ -7,10 +7,10 @@
  * colliders in 2D physics simulations.
  */
 
-#ifndef PDPHYZX_CIRCLE_H
-#define PDPHYZX_CIRCLE_H
+#ifndef PDPHYZX_PX_CIRCLE_H
+#define PDPHYZX_PX_CIRCLE_H
 
-#include "collider.h" /* For PxCollider type */
+#include "px_collider.h"
 
 /**
  * Creates a new circular collider with the specified radius.
@@ -25,4 +25,4 @@ extern PxCollider pxCircleColliderNew(float radius);
 
 extern PxMassData pxCircleComputeMass(PxCollider *collider, float density);
 
-#endif // PDPHYZX_CIRCLE_H
+#endif // PDPHYZX_PX_CIRCLE_H

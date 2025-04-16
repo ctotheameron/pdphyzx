@@ -1,9 +1,9 @@
 #include <assert.h>
 
-#include "platform.h"
-#include "world.h"
+#include "px_platform.h"
+#include "px_world.h"
 
-#include "world_api.h"
+#include "px_world_api.h"
 
 const PxWorldAPI *px_world;
 

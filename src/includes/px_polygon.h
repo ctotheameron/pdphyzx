@@ -1,5 +1,5 @@
 /**
- * @file polygon.h
+ * @file px_polygon.h
  *
  * @brief Defines functions and structures for polygon-based colliders in the
  *        pdphyzx engine.
@@ -13,13 +13,14 @@
  * calculation of their physical properties.
  */
 
-#ifndef PDPHYZX_POLYGON_H
-#define PDPHYZX_POLYGON_H
+#ifndef PDPHYZX_PX_POLYGON_H
+#define PDPHYZX_PX_POLYGON_H
 
 #include <stddef.h>
 #include <stdint.h>
 
-#include "collider.h"
+#include "px_collider.h"
+#include "px_vec2.h"
 
 /**
  * Creates a new polygon collider from the given vertices.

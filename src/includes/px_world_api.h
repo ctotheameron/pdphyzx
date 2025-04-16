@@ -1,5 +1,5 @@
 /**
- * @file api.h
+ * @file px_world_api.h
  *
  * @brief Function pointer API for the PDPhyzx world physics system
  *
@@ -10,10 +10,10 @@
  * bodies, and advancing the physics simulation.
  */
 
-#ifndef PDPHYZX_WORLD_API_H
-#define PDPHYZX_WORLD_API_H
+#ifndef PDPHYZX_PX_WORLD_API_H
+#define PDPHYZX_PX_WORLD_API_H
 
-#include "world.h"
+#include "px_world.h"
 
 /**
  * @brief API structure containing function pointers for world operations
@@ -23,7 +23,7 @@
  * physics worlds.
  */
 typedef struct {
-  PxWorld *(*new)(uint8_t iterations, uint8_t targetFps, float scale);
+  PxWorld *(*new)(uint8_t iterations, uint8_t targetFps);
   void (*free)(PxWorld *world);
   PxBody *(*newStaticBody)(PxWorld *world, PxShape shape, PxVec2 position);
   PxBody *(*newDynamicBody)(PxWorld *world, PxShape shape, float density,
@@ -35,4 +35,4 @@ typedef struct {
 
 PxWorldAPI *newPxWorldAPI(void);
 
-#endif // PDPHYZX_WORLD_API_H
+#endif // PDPHYZX_PX_WORLD_API_H

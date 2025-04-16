@@ -1,5 +1,5 @@
-#ifndef PDPHYZX_PLATFORM_H
-#define PDPHYZX_PLATFORM_H
+#ifndef PDPHYZX_PX_PLATFORM_H
+#define PDPHYZX_PX_PLATFORM_H
 
 #include "pd_api.h"
 
@@ -28,4 +28,4 @@ extern PlaydateAPI *pd;
 #pragma clang diagnostic pop
 #endif
 
-#endif // PDPHYZX_PLATFORM_H
+#endif // PDPHYZX_PX_PLATFORM_H

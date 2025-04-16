@@ -1,5 +1,5 @@
 /**
- * @file mat2.h
+ * @file px_mat2.h
  * @brief This file contains functions for handling 2x2 matrix operations.
  *
  * The functions provided in this file are used to create, manipulate, and use
@@ -8,10 +8,10 @@
  * vectors.
  */
 
-#ifndef PDPHYZX_MAT2_H
-#define PDPHYZX_MAT2_H
+#ifndef PDPHYZX_PX_MAT2_H
+#define PDPHYZX_PX_MAT2_H
 
-#include "vec2.h"
+#include "px_vec2.h"
 
 /**
  * @brief Definition of a 2x2 matrix structure with multiple access methods.
@@ -87,4 +87,4 @@ static inline PxVec2 pxMat2MultVec2(PxMat2 mat2, PxVec2 v) {
                 mat2.m10 * v.x + mat2.m11 * v.y);
 }
 
-#endif // PDPHYZX_MAT2_H
+#endif // PDPHYZX_PX_MAT2_H

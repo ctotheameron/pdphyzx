@@ -1,5 +1,5 @@
 /**
- * @file collision.h
+ * @file px_collision.h
  * @brief This file contains functions for handling collision detection and
  * response.
  *
@@ -9,11 +9,11 @@
  * essential for collision detection in physics simulations.
  */
 
-#ifndef PDPHYZX_COLLISION_H
-#define PDPHYZX_COLLISION_H
+#ifndef PDPHYZX_PX_COLLISION_H
+#define PDPHYZX_PX_COLLISION_H
 
-#include "body.h"
-#include "manifold.h"
+#include "px_body.h"
+#include "px_manifold.h"
 
 /**
  * Detects and handles the collision between two bodies.
@@ -24,4 +24,4 @@
  */
 void pxCollide(PxBody *bodyA, PxBody *bodyB, PxManifold *manifold);
 
-#endif // PDPHYZX_COLLISION_H
+#endif // PDPHYZX_PX_COLLISION_H

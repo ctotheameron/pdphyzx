@@ -1,5 +1,5 @@
 /**
- * @file api.h
+ * @file px_body_api.h
  * @brief Public API for manipulating physics bodies
  *
  * This header provides the interface for modifying properties of physics
@@ -10,10 +10,10 @@
  *   px_body->setOrientation(myBody, 1.57f); // Set to 90 degrees
  */
 
-#ifndef PX_BODY_API_H
-#define PX_BODY_API_H
+#ifndef PDPHYZX_PX_BODY_API_H
+#define PDPHYZX_PX_BODY_API_H
 
-#include "body.h"
+#include "px_body.h"
 
 typedef struct {
   bool (*isValid)(PxBody *body);
@@ -27,4 +27,4 @@ typedef struct {
 
 PxBodyAPI *newPxBodyAPI(void);
 
-#endif // PX_BODY_API_H
+#endif // PDPHYZX_PX_BODY_API_H

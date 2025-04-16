@@ -1,16 +1,13 @@
 #include <assert.h>
-#include <stdint.h>
-#include <stdio.h>
 
-#include "body.h"
-#include "collider.h"
-#include "manifold.h"
-#include "manifold_pool.h"
-#include "pd_api/pd_api_gfx.h"
-#include "platform.h"
-#include "px_math.h"
+#include "px_body.h"
+#include "px_body_array.h"
+#include "px_clock.h"
+#include "px_manifold.h"
+#include "px_manifold_pool.h"
+#include "px_platform.h"
 
-#include "world.h"
+#include "px_world.h"
 
 PxWorld *pxWorldAlloc(void) {
   PxWorld *world = (PxWorld *)pxalloc(sizeof(PxWorld));
@@ -22,26 +19,24 @@ PxWorld *pxWorldAlloc(void) {
   return world;
 }
 
-PxWorld *pxWorldInit(PxWorld *world, uint8_t iterations, uint8_t targetFps,
-                     float scale) {
+PxWorld *pxWorldInit(PxWorld *world, uint8_t iterations, uint8_t targetFps) {
   world->iterations = iterations;
-  world->scale = scale;
   world->staticBodies = (PxBodyArray){0};
   world->dynamicBodies = (PxBodyArray){0};
   world->contacts = (PxManifoldPool){0};
 
   // Default sleep settings
-  world->linearSleepThresholdSq = 0.0001f * scale * scale; // 1cm/s
-  world->angularSleepThreshold = 0.01f * scale;            // ~0.6 degrees/s
-  world->timeToSleep = 0.5f;                               // half a second
+  world->linearSleepThresholdSq = 0.0001f; // 1cm/s
+  world->angularSleepThreshold = 0.01f;    // ~0.6 degrees/s
+  world->timeToSleep = 0.5f;               // half a second
 
   pxClockInit(&world->clock, targetFps);
 
   return world;
 }
 
-PxWorld *pxWorldNew(uint8_t iterations, uint8_t targetFps, float scale) {
-  return pxWorldInit(pxWorldAlloc(), iterations, targetFps, scale);
+PxWorld *pxWorldNew(uint8_t iterations, uint8_t targetFps) {
+  return pxWorldInit(pxWorldAlloc(), iterations, targetFps);
 }
 
 void pxWorldFree(PxWorld *world) {
@@ -66,10 +61,6 @@ static PxBody *pxWorldAddBody(PxWorld *world, PxShape shape, PxBodyFlags type,
                               float density, PxVec2 position) {
 
   PxBody body = pxBodyNew(shape, type, density, position);
-
-  body.restitution *= world->scale;
-  body.staticFriction = pxFastDiv(body.staticFriction, world->scale);
-  body.dynamicFriction = pxFastDiv(body.dynamicFriction, world->scale);
 
   PxBodyArray *bodies =
       type == PX_BODY_DYNAMIC ? &world->dynamicBodies : &world->staticBodies;
@@ -408,8 +399,7 @@ bool pxWorldStep(PxWorld *world, PxVec2 g) {
   pxClockBeginFrame(clock);
 
   while (pxClockShouldStep(clock) && stepCount < clock->maxStepsPerFrame) {
-    float substepDt =
-        pxFastDiv(pxClockGetFixedDeltaTime(clock), SUBSTEPS) * world->scale;
+    float substepDt = pxFastDiv(pxClockGetFixedDeltaTime(clock), SUBSTEPS);
 
     // Perform multiple substeps for each physics step
     for (int i = 0; i < SUBSTEPS; i++) {
