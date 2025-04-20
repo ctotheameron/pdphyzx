@@ -7,7 +7,8 @@ A lightweight, impulse-based 2D physics engine designed specifically for the
 Playdate console. Handle up to 256 physics bodies at smooth framerates while
 staying within Playdate's performance constraints.
 
-<img alt="demo" src="https://github.com/user-attachments/assets/c07b3a99-bbab-4808-987c-981f15a7d249" width="500" />
+<img alt="demo" src="https://github.com/user-attachments/assets/dc023d9d-f055-4939-9ec2-aff84d3be72b" width="48%" />
+<img alt="demo" src="https://github.com/user-attachments/assets/c07b3a99-bbab-4808-987c-981f15a7d249" width="48%" />
 
 ## ✨ Features
 
