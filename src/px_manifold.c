@@ -237,9 +237,9 @@ void pxManifoldCorrectPosition(PxManifold *manifold) {
 
   // 2. Scale by PX_POSITIONAL_CORRECTION_FACTOR (Baumgarte factor)
   // 3. Divide by total inverse mass to get impulse-like correction
-  float correctionalMagnitude =
-      pxFastDiv(excessPenetration * PX_POSITIONAL_CORRECTION_FACTOR,
-                bodyA->iMass + bodyB->iMass);
+  float invMassSum = bodyA->iMass + bodyB->iMass;
+  float correctionalMagnitude = pxFastDiv(
+      excessPenetration * PX_POSITIONAL_CORRECTION_FACTOR, invMassSum);
 
   PxVec2 correctionVector =
       pxVec2Multf(manifold->normal, correctionalMagnitude);

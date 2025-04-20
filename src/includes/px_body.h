@@ -230,7 +230,7 @@ void pxBodyWakeUp(PxBody *body);
  * @param body
  * @param position
  */
-void pxBodySetPosition(PxBody *body, PxVec2 position);
+void pxBodySetPosition(PxBody *body, float x, float y);
 
 /**
  * @brief Moves a body by the specified distance

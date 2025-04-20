@@ -12,7 +12,7 @@
 #define PX_MAX_CONTACTS 2
 
 // Maximum penetration allowed before position correction
-#define PX_ALLOWED_PENETRATION 0.01f
+#define PX_ALLOWED_PENETRATION 0.0001f * PDPHYZX_UNIT
 
 // Baumgarte stabilization factor (0.2-0.8) controlling correction strength
 #define PX_POSITIONAL_CORRECTION_FACTOR 0.2f

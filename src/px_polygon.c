@@ -126,6 +126,89 @@ PxPolygonData pxPolygonData(uint8_t count, PxVec2 *vertices) {
 }
 
 /**
+ * Computes the signed area and centroid of a simple (convex or concave) polygon
+ * using the shoelace formula. The polygon is treated as a fan of triangles
+ * from the origin to each edge (v0, v1), which allows us to generalize area
+ * and centroid calculation for any polygon.
+ *
+ * Mathematically:
+ *   - The area is computed as the sum of the signed areas of triangles formed
+ *     by each edge and the origin: 0.5 * (v0.x * v1.y - v1.x * v0.y)
+ *   - The centroid is the area-weighted average of the centroids of these
+ *     triangles.
+ *   - This approach works for any simple polygon (not self-intersecting), and
+ *     is efficient and numerically stable.
+ *
+ * Reference:
+ *   https://en.wikipedia.org/wiki/Centroid#Centroid_of_a_polygon
+ */
+static void pxPolygonComputeAreaAndCentroid(PxVec2Array *vertices,
+                                            float *outArea,
+                                            PxVec2 *outCentroid) {
+  float area = 0;
+  PxVec2 centroid = pxVec2(0, 0);
+
+  for (uint8_t i = 0; i < vertices->length; i++) {
+    uint8_t j = (i + 1 < vertices->length) ? i + 1 : 0;
+    PxVec2 v0 = pxVec2ArrayGet(*vertices, i);
+    PxVec2 v1 = pxVec2ArrayGet(*vertices, j);
+
+    // Cross product gives twice the signed area of the triangle (origin, v0,
+    // v1)
+    float cross = pxVec2Cross(v0, v1);
+    float triangleArea = 0.5f * cross;
+    area += triangleArea;
+
+    // The centroid of a triangle (origin, v0, v1) is (v0 + v1) / 3
+    // We weight each triangle's centroid by its signed area
+    pxVec2AddAssign(
+        &centroid, pxVec2Multf(pxVec2Add(v0, v1), triangleArea * PX_ONE_THIRD));
+  }
+
+  *outArea = area;
+  *outCentroid = centroid;
+}
+
+/**
+ * Compute moment of inertia about centroid
+ *
+ *       density
+ * I =  ───────── ×  Σ   [X × (X² + X·X' + X'² + Y² + Y·Y' + Y'²)]
+ *         12      edges
+ *
+ * Where:
+ * Σ      = sum over all edges of the polygon
+ * ⨯      = 2D cross product for the edge:  x·y' − x'·y
+ * X, Y   = coordinates of the first vertex of the edge
+ * X', Y' = coordinates of the second vertex of the edge
+ *
+ *
+ * See:
+ * https://en.wikipedia.org/wiki/List_of_moments_of_inertia#Polygon
+ */
+static float pxPolygonComputeMomentOfInertia(const PxVec2Array *vertices,
+                                             float density) {
+  float momentOfInertia = 0;
+
+  for (uint8_t i = 0; i < vertices->length; i++) {
+    uint8_t j = (i + 1 < vertices->length) ? i + 1 : 0;
+    PxVec2 v0 = vertices->items[i];
+    PxVec2 v1 = vertices->items[j];
+
+    float edgeCross = pxVec2Cross(v0, v1);
+
+    float sumSquares = v0.x * v0.x + v0.x * v1.x + v1.x * v1.x + v0.y * v0.y +
+                       v0.y * v1.y + v1.y * v1.y;
+
+    momentOfInertia += edgeCross * sumSquares;
+  }
+
+  momentOfInertia *= pxFastDiv(density, 12.0f);
+
+  return momentOfInertia;
+}
+
+/**
  * Computes mass properties for a polygon collider.
  *
  * @param collider - collider to compute mass properties for (must be a polygon
@@ -141,54 +224,24 @@ PxMassData pxPolygonComputeMass(PxCollider *collider, float density) {
     return (PxMassData){0};
   }
 
-  // Calculate centroid and moment of interia
-  PxVec2 centroid = pxVec2(0, 0);
+  PxVec2Array *vertices = &collider->shape.polygon.vertices;
   float area = 0;
-  float momentOfInertia = 0;
+  PxVec2 centroid = pxVec2(0, 0);
 
-  PxVec2Array vertices = collider->shape.polygon.vertices;
+  // Compute area and centroid
+  pxPolygonComputeAreaAndCentroid(vertices, &area, &centroid);
 
-  for (uint8_t curIdx = 0; curIdx < vertices.length; curIdx++) {
-    uint8_t nextIdx = curIdx + 1 < vertices.length ? curIdx + 1 : 0;
-
-    // Triangle vertices, third vertex implied as (0, 0)
-    PxVec2 curVertex = pxVec2ArrayGet(vertices, curIdx);
-    PxVec2 nextVertex = pxVec2ArrayGet(vertices, nextIdx);
-
-    float d = pxVec2Cross(curVertex, nextVertex);
-
-    // Area of triangle formed with origin
-    float triangleArea = 0.5f * d;
-    area += triangleArea;
-
-    // Use area to weight the centroid average, not just vertex position
-    // Formula: (v1+v2)/3 * triangleArea (since the third vertex is at origin)
-    pxVec2AddAssign(&centroid, pxVec2Multf(pxVec2Add(curVertex, nextVertex),
-                                           triangleArea * PX_ONE_THIRD));
-
-    // Calculate moment of inertia for the triangle using the standard physics
-    // formula: ∫∫(x²+y²) dA = (1/12) * (x1²+x1*x2+x2²+y1²+y1*y2+y2²) * area
-    float intx2 = curVertex.x * curVertex.x + nextVertex.x * curVertex.x +
-                  nextVertex.x * nextVertex.x;
-
-    float inty2 = curVertex.y * curVertex.y + nextVertex.y * curVertex.y +
-                  nextVertex.y * nextVertex.y;
-
-    momentOfInertia += (0.25f * PX_ONE_THIRD * d) * (intx2 + inty2);
-  }
-
-  // Normalize the centroid by the total area
+  // Normalize centroid by total area
   pxVec2MultfAssign(&centroid, pxFastRcp(area));
 
-  // Translate vertices to centroid (make the centroid (0, 0)
-  // This improves numerical stability and helps collision detection
-  // by having the body rotate around its center of mass
-  for (uint8_t i = 0; i < vertices.length; ++i) {
-    pxVec2SubAssign(&vertices.items[i], centroid);
+  // Shift all vertices so centroid is at the origin
+  for (uint8_t i = 0; i < vertices->length; ++i) {
+    pxVec2SubAssign(&vertices->items[i], centroid);
   }
 
+  // Compute moment of inertia about centroid
+  float momentOfInertia = pxPolygonComputeMomentOfInertia(vertices, density);
   float mass = density * area;
-  momentOfInertia = mass * momentOfInertia;
 
   return (PxMassData){
       .mass = mass,

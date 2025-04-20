@@ -17,8 +17,10 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+#include "px_unit.h"
+
 #define PX_ONE_THIRD 0.333333333f
-#define PX_EPSILON 0.0001f
+#define PX_EPSILON 0.0001f * PDPHYZX_UNIT
 #define PX_PI 3.141592741f
 #define PX_2_PI PX_PI * 2.0f
 #define PX_H_PI PX_PI * 0.5f

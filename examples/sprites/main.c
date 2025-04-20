@@ -7,6 +7,7 @@
 #include "pd_api/pd_api_sys.h"
 
 #define PDPHYZX_IMPLEMENTATION
+#define PDPHYZX_UNIT PDPHYZX_UNIT_CM
 #include "../../dist/pdphyzx.h"
 
 #include "circle.h"
@@ -100,17 +101,13 @@ static int update(void *userdata) {
   handleInput();
 
   // Step the physics simulation
-  px->world->step(world, g);
+  px->world->step(world);
 
   // Draw the screen
   pd->sprite->updateAndDrawSprites();
 
   if (showDebugInfo) {
     px->world->drawDebug(world);
-
-    // Show debug status
-    pd->graphics->drawText("Debug Mode", strlen("Debug Mode"), kASCIIEncoding,
-                           5, 5);
   }
 
   // Display FPS
@@ -133,9 +130,10 @@ int eventHandler(PlaydateAPI *playdate, PDSystemEvent event, uint32_t arg) {
     pd->system->setUpdateCallback(update, NULL);
 
     // Setup the physics engine
-    g = pxVec2(0, 9.8);
     px = registerPdPhyzx(playdate);
-    world = px->world->new(232, 99);
+    world = px->world->new(99);
+    px->world->setIterations(world, 8);
+    px->world->setGravity(world, g.x, 9.8);
 
     ground = newGround(world, pxVec2(200, 150));
 

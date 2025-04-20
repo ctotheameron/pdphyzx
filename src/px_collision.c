@@ -372,14 +372,11 @@ void pxCollidePolygons(PxBody *bodyA, PxBody *bodyB, PxManifold *manifold) {
   // c is distance from origin
   float refC = pxVec2Dot(refFaceNormal, refFace[0]);
 
-  // Compute negative side and positive side plane offsets
-  float negSide = -pxVec2Dot(sidePlaneNormal, refFace[0]);
-  float posSide = pxVec2Dot(sidePlaneNormal, refFace[1]);
+  int cp; // Clipped points array
 
   // Clip incident face to reference face side planes
+  float negSide = -pxVec2Dot(sidePlaneNormal, refFace[0]);
   PxVec2 clipPoints1[2];
-  PxVec2 clipPoints2[2];
-  int cp; // Clipped points array
 
   // Clip against the first side plane
   cp = pxClipSegmentToLine(clipPoints1, incidentFace,
@@ -390,6 +387,9 @@ void pxCollidePolygons(PxBody *bodyA, PxBody *bodyB, PxManifold *manifold) {
   }
 
   // Clip against the second side plane
+  float posSide = pxVec2Dot(sidePlaneNormal, refFace[1]);
+  PxVec2 clipPoints2[2];
+
   cp = pxClipSegmentToLine(clipPoints2, clipPoints1, sidePlaneNormal, posSide);
 
   if (cp < 2) {
@@ -428,7 +428,7 @@ void pxCollidePolygons(PxBody *bodyA, PxBody *bodyB, PxManifold *manifold) {
 
   // Calculate average penetration if multiple points
   if (numContacts > 1) {
-    manifold->penetration /= numContacts;
+    manifold->penetration = pxFastDiv(manifold->penetration, numContacts);
   }
 
   manifold->contacts.length = numContacts;

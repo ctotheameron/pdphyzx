@@ -107,4 +107,4 @@ typedef struct PxCollider {
  */
 PxCollider pxColliderNew(PxColliderType type, PxShapeData shape);
 
-#endif // PDPHYZX_COLLIDER_H
+#endif // PDPHYZX_PX_COLLIDER_H

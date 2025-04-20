@@ -6,8 +6,15 @@
 #include "px_manifold.h"
 #include "px_manifold_pool.h"
 #include "px_platform.h"
+#include "px_unit.h"
+#include "px_vec2.h"
 
 #include "px_world.h"
+
+#define PX_DEFAULT_ITERATIONS 8
+#define PX_DEFAULT_SLEEP_THRESH_SQ 0.001f * PDPHYZX_UNIT_SQ // 1cm/s
+#define PX_DEFAULT_ANGULAR_SLEEP_THRESH 0.01f               // ~0.6 degrees/s
+#define PX_DEFAULT_TIME_TO_SLEEP 0.5f                       // half a second
 
 PxWorld *pxWorldAlloc(void) {
   PxWorld *world = (PxWorld *)pxalloc(sizeof(PxWorld));
@@ -26,17 +33,17 @@ PxWorld *pxWorldInit(PxWorld *world, uint8_t iterations, uint8_t targetFps) {
   world->contacts = (PxManifoldPool){0};
 
   // Default sleep settings
-  world->linearSleepThresholdSq = 0.0001f; // 1cm/s
-  world->angularSleepThreshold = 0.01f;    // ~0.6 degrees/s
-  world->timeToSleep = 0.5f;               // half a second
+  world->linearSleepThresholdSq = PX_DEFAULT_SLEEP_THRESH_SQ;
+  world->angularSleepThreshold = PX_DEFAULT_ANGULAR_SLEEP_THRESH;
+  world->timeToSleep = PX_DEFAULT_TIME_TO_SLEEP;
 
   pxClockInit(&world->clock, targetFps);
 
   return world;
 }
 
-PxWorld *pxWorldNew(uint8_t iterations, uint8_t targetFps) {
-  return pxWorldInit(pxWorldAlloc(), iterations, targetFps);
+PxWorld *pxWorldNew(uint8_t targetFps) {
+  return pxWorldInit(pxWorldAlloc(), PX_DEFAULT_ITERATIONS, targetFps);
 }
 
 void pxWorldFree(PxWorld *world) {
@@ -45,6 +52,22 @@ void pxWorldFree(PxWorld *world) {
   }
 
   pxfree(world);
+}
+
+void pxWorldSetGravity(PxWorld *world, float x, float y) {
+  if (!world) {
+    return;
+  }
+
+  world->gravity = pxVec2Multf(pxVec2(x, y), PDPHYZX_UNIT);
+}
+
+void pxWorldSetIterations(PxWorld *world, uint8_t iterations) {
+  if (!world) {
+    return;
+  }
+
+  world->iterations = iterations;
 }
 
 /**
@@ -100,9 +123,9 @@ void pxWorldFreeBody(PxWorld *world, PxBody *body) {
 // Physics calculations
 //===============================================================================
 
-static void pxDetectRestingContacts(PxWorld *world, PxVec2 g, float dt) {
+static void pxDetectRestingContacts(PxWorld *world, float dt) {
   pxManifoldPoolEach(&world->contacts, manifold) {
-    pxManifoldDetectRestingContact(manifold, g, dt);
+    pxManifoldDetectRestingContact(manifold, world->gravity, dt);
   }
 }
 
@@ -132,8 +155,12 @@ static void pxUpdateSleepStates(PxWorld *world, float dt) {
 
     // Case 1: Dynamic body resting on static body
     if (isDynBodyA && !isDynBodyB && isResting) {
+      assert(bodyA->worldIndex < 64 && "Dynamic body index exceeds 64");
+
       hasRestingStaticContact |= (1ULL << bodyA->worldIndex);
     } else if (bodyB->density > 0 && bodyA->density == 0 && isResting) {
+      assert(bodyB->worldIndex < 64 && "Dynamic body index exceeds 64");
+
       hasRestingStaticContact |= (1ULL << bodyB->worldIndex);
     }
 
@@ -181,6 +208,9 @@ static void pxUpdateSleepStates(PxWorld *world, float dt) {
     }
 
     if (body->sleepTime >= world->timeToSleep) {
+      body->velocity = pxVec2(0, 0);
+      body->angularVelocity = 0.0f;
+      pxBodyClearForces(body);
       pxBodySetFlag(body, PX_BODY_FLAG_SLEEPING, true);
     }
 
@@ -198,13 +228,13 @@ static void pxUpdateSleepStates(PxWorld *world, float dt) {
  * @param g  - gravity vector
  * @param dt - time step in seconds
  */
-static void pxIntegrateForces(PxWorld *world, PxVec2 g, float dt) {
+static void pxIntegrateForces(PxWorld *world, float dt) {
   pxBodyArrayEach(&world->dynamicBodies, body) {
     if (pxBodyIsSleeping(body)) {
       continue;
     }
 
-    pxBodyIntegrateForces(body, g, dt);
+    pxBodyIntegrateForces(body, world->gravity, dt);
   }
 }
 
@@ -377,11 +407,11 @@ static void pxGenerateCollisionInfo(PxWorld *world) {
  * @param g     - gravity vector
  * @param dt    - time step delta in seconds
  */
-static void pxWorldStepWithDt(PxWorld *world, PxVec2 g, float dt) {
+static void pxWorldStepWithDt(PxWorld *world, float dt) {
   pxManifoldPoolClear(&world->contacts);
   pxGenerateCollisionInfo(world);
-  pxDetectRestingContacts(world, g, dt);
-  pxIntegrateForces(world, g, dt);
+  pxDetectRestingContacts(world, dt);
+  pxIntegrateForces(world, dt);
   pxApplyImpulses(world);
   pxIntegrateVelocities(world, dt);
   pxCorrectPositions(world);
@@ -389,7 +419,7 @@ static void pxWorldStepWithDt(PxWorld *world, PxVec2 g, float dt) {
   pxClearForces(world);
 }
 
-bool pxWorldStep(PxWorld *world, PxVec2 g) {
+bool pxWorldStep(PxWorld *world) {
   PxClock *clock = &world->clock;
   bool stepped = false;
   uint8_t stepCount = 0;
@@ -403,7 +433,7 @@ bool pxWorldStep(PxWorld *world, PxVec2 g) {
 
     // Perform multiple substeps for each physics step
     for (int i = 0; i < SUBSTEPS; i++) {
-      pxWorldStepWithDt(world, g, substepDt);
+      pxWorldStepWithDt(world, substepDt);
     }
 
     pxClockAdvance(clock);

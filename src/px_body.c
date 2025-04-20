@@ -1,9 +1,11 @@
 #include <stdint.h>
 #include <stdio.h>
 
-#include "px_body_array.h"
 #include "px_circle.h"
+#include "px_math.h"
 #include "px_polygon.h"
+#include "px_unit.h"
+#include "px_vec2.h"
 
 #include "px_body.h"
 
@@ -33,7 +35,8 @@ PxBody pxBodyNew(PxShape shape, PxBodyFlags type, float density,
     }
 
     // Only dynamic bodies get real mass data
-    massData = collider.computeMass(&collider, density);
+    massData =
+        collider.computeMass(&collider, pxFastDiv(density, PDPHYZX_UNIT_SQ));
     break;
 
   default:
@@ -79,13 +82,14 @@ PxBody pxBodyNew(PxShape shape, PxBodyFlags type, float density,
   };
 }
 
-void pxBodySetPosition(PxBody *body, PxVec2 position) {
+void pxBodySetPosition(PxBody *body, float x, float y) {
   if (!body) {
     return;
   }
 
-  body->position = position;
-  body->collider.updateAABB(&body->collider, &body->aabb, position);
+  body->position.x = x;
+  body->position.y = y;
+  body->collider.updateAABB(&body->collider, &body->aabb, body->position);
 }
 
 void pxBodyMoveBy(PxBody *body, PxVec2 distance) {
@@ -189,6 +193,10 @@ void pxBodyClearForces(PxBody *body) {
 }
 
 void pxBodyWakeUp(PxBody *body) {
+  if (!body) {
+    return;
+  }
+
   body->sleepTime = 0.0f;
   pxBodySetFlag(body, PX_BODY_FLAG_SLEEPING, false);
 }

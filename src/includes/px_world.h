@@ -34,6 +34,7 @@ typedef struct {
   PxManifoldPool contacts;
 
   uint8_t iterations;
+  PxVec2 gravity; // m/s^2
 
   float linearSleepThresholdSq; // m/s (squared)
   float angularSleepThreshold;  // rad/s
@@ -45,12 +46,11 @@ typedef struct {
 /**
  * @brief Creates a new physics world
  *
- * @param iterations - number of constraint solving iterations per step
  * @param targetFps  - target frames per second for simulation stability
  *
  * @return pointer to newly created PxWorld or NULL if allocation fails
  */
-PxWorld *pxWorldNew(uint8_t iterations, uint8_t targetFps);
+PxWorld *pxWorldNew(uint8_t targetFps);
 
 /**
  * @brief Destroys a physics world and frees associated memory
@@ -58,6 +58,30 @@ PxWorld *pxWorldNew(uint8_t iterations, uint8_t targetFps);
  * @param world
  */
 void pxWorldFree(PxWorld *world);
+
+/**
+ * @brief Sets the gravity vector for the physics world
+ *
+ * This function sets the global gravity acceleration that affects all dynamic
+ * bodies within the physics world. The values are automatically scaled to
+ * internal units.
+ *
+ * @param world - the physics world to update
+ * @param x     - x component of gravity in m/s²
+ * @param y     - y component of gravity in m/s²
+ */
+void pxWorldSetGravity(PxWorld *world, float x, float y);
+
+/**
+ * @brief Sets the number of constraint solving iterations per physics step
+ *
+ * Higher iteration counts result in more accurate collision resolution but
+ * require more computation time. Typically values between 4-20 are used.
+ *
+ * @param world      - the physics world to update
+ * @param iterations - number of iterations for constraint solving
+ */
+void pxWorldSetIterations(PxWorld *world, uint8_t iterations);
 
 /**
  * @brief Creates a new static body in the physics world
@@ -109,13 +133,25 @@ void pxWorldFreeBody(PxWorld *world, PxBody *body);
  * positions of all dynamic bodies.
  *
  * @param world
- * @param g     - gravity vector to apply during the step
  *
  * @return true if step was performed, false if no step was needed based on time
  *         since last call
  */
-bool pxWorldStep(PxWorld *world, PxVec2 g);
+bool pxWorldStep(PxWorld *world);
 
+/**
+ * @brief Renders debug visualization of the physics world
+ *
+ * This function draws debug information including:
+ * - AABBs (bounding boxes) for all bodies
+ * - Indicators for sleeping bodies
+ * - Velocity vectors for moving bodies
+ * - Statistics about contacts and sleeping bodies
+ *
+ * Useful for debugging physics behavior and verifying collision detection.
+ *
+ * @param world
+ */
 void pxWorldDrawDebug(PxWorld *world);
 
 #endif // PDPHYZX_PX_WORLD_H

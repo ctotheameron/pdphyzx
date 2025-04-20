@@ -1,3 +1,5 @@
+#include <assert.h>
+
 #include "px_body.h"
 
 #include "px_body_array.h"
@@ -57,6 +59,8 @@ PxBody *pxBodyArrayAdd(PxBodyArray *array, PxBody *body) {
 }
 
 void pxBodyArrayRemove(PxBodyArray *array, uint8_t index) {
+  assert(index < 64 && "Body index exceeds 64");
+
   if (index >= array->length || array->freedCount >= PX_MAX_BODIES) {
     return;
   }
