@@ -404,6 +404,11 @@ bool genLspInfo(void) {
       cmd_append(&fileCmd, lspCmd.items[j]);
     }
 
+    // Add -I dist only for files under examples/
+    if (strncmp(src, "examples/", 9) == 0) {
+      cmd_append(&fileCmd, "-I", DIST_DIR);
+    }
+
     // Add file-specific output and source
     cmd_append(&fileCmd, "-o", obj, src);
 
@@ -889,9 +894,9 @@ bool buildOutputContent(String_Builder *o, const char **files, size_t count,
       line = sv_chop_by_delim(&remaining, '\n');
 
       // Skip include guards
-      if (sv_starts_with(line, sv_from_cstr("#ifndef PDPHYZX_")) ||
-          sv_starts_with(line, sv_from_cstr("#define PDPHYZX_")) ||
-          sv_starts_with(line, sv_from_cstr("#endif // PDPHYZX_")) ||
+      if (sv_starts_with(line, sv_from_cstr("#ifndef PDPHYZX_PX")) ||
+          sv_starts_with(line, sv_from_cstr("#define PDPHYZX_PX")) ||
+          sv_starts_with(line, sv_from_cstr("#endif // PDPHYZX_PX")) ||
           sv_starts_with(line, sv_from_cstr("#pragma once"))) {
         continue;
       }

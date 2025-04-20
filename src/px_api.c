@@ -7,9 +7,11 @@ PlaydateAPI *pd = NULL;
 PdPhyzxAPI *registerPdPhyzx(PlaydateAPI *playdate) {
   pd = playdate;
 
+  pxInitSinTable();
+
   PdPhyzxAPI *api = pxalloc(sizeof(*api));
-  api->body = newPxBodyAPI();
   api->world = newPxWorldAPI();
+  api->body = newPxBodyAPI();
 
   return api;
 }

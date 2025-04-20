@@ -59,4 +59,4 @@ PxCollider pxBoxColliderNew(float width, float height);
  */
 PxVec2 pxPolygonGetSupport(const PxPolygonData polygon, const PxVec2 direction);
 
-#endif // PDPHYZX_POLYGON_H
+#endif // PDPHYZX_PX_POLYGON_H

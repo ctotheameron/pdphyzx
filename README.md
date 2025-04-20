@@ -43,6 +43,15 @@ curl -O https://github.com/ctotheameron/pdphyzx/releases/latest/download/pdphyzx
 // STB-style - only add the #define before the first include.
 // Note that this must be included **after** the Playdate API header.
 #define PDPHYZX_IMPLEMENTATION
+
+// (optional)
+// Define the unit system before including the library:
+// PDPHYZX_UNIT_MM, PDPHYZX_UNIT_CM, or PDPHYZX_UNIT_M
+//
+// Default is PDPHYZX_UNIT_M
+#define PDPHYZX_UNIT PDPHYZX_UNIT_MM // 1 unit = 1 mm
+
+#include "pdphyzx.h"
 #include "pdphyzx.h"
 
 // These don't have to be global, but for example...
@@ -50,17 +59,8 @@ extern PlaydateAPI *pd;
 PdPhyzxAPI *px = NULL;
 PxWorld *world = NULL;
 
-// Gravity vector can be changed per-frame if needed
-PxVec2 gravity = pxVec2(0, 9.8f); // positive y is down
-
 // Should match your target refresh rate
 float targetFps = 50
-
-// World scaling factor
-float pixelsPerMeter = 8.0f;
-
-// Number of constraint solving iterations
-int solverIterations = 10; // (higher = more accurate but slower)
 ```
 
 #### Initialize simulation
@@ -74,7 +74,15 @@ int eventHandler(PlaydateAPI *playdate, PDSystemEvent event, uint32_t arg) {
       pd->system->setUpdateCallback(update, NULL);
 
       px = registerPdPhyzx(playdate);
-      world = px->world->new(solverIterations, targetFps, pixelsPerMeter);
+      world = px->world->new(targetFps);
+
+      // Number of constraint solving iterations
+      // (higher = more accurate but slower)
+      px->world->setIterations(world, 10);
+
+      // Set the gravity vector (m/s^2)
+      // This can change at runtime
+      px->world->setGravity(world, 0, 9.8);
 
       // Create a bouncing ball
       PxShape ballShape = {.circle = {.radius = 10.0f}};
@@ -111,9 +119,10 @@ int handleInput(void) {
   pd->system->getButtonState(&current, &pressed, NULL);
 
   if (current & kButtonA) {
-    PxVec2 impulse = pxVec2(0, -100.0f); // negative y is up
-    PvVec2 contactPoint = pxVec2(0, 0);  // center
-    px->body->applyImpulse(ball, impulse, contactPoint);
+    // Apply impulse (x,y components for both impulse and contact point)
+    float impulseX = 0, impulseY = -100.0f;  // negative y is up
+    float contactX = 0, contactY = 0;        // center of body
+    px->body->applyImpulse(ball, impulseX, impulseY, contactX, contactY);
   }
 }
 
@@ -123,7 +132,7 @@ int update(void *userdata) {
   // ...
 
   // Step physics simulation
-  px->world->step(world, gravity);
+  px->world->step(world);
 
   // Rendering can be handled manually or using Playdate's sprite system.
   // See `examples/` for more details.
@@ -158,6 +167,31 @@ px->body      // Body manipulation and forces
 ```
 
 See the [source code](src/) for detailed API documentation.
+
+## 🔍 Unit System
+
+pdphyzx supports multiple unit scales to make it easier to work with different
+sized objects:
+
+- `PDPHYZX_UNIT_MM`: 1 unit = 1 millimeter
+- `PDPHYZX_UNIT_CM`: 1 unit = 1 centimeter
+- `PDPHYZX_UNIT_M`: 1 unit = 1 meter (default)
+
+Define this before including the library:
+
+```c
+#define PDPHYZX_UNIT PDPHYZX_UNIT_MM  // Choose your preferred scale
+#include "pdphyzx.h"
+```
+
+When using `PDPHYZX_UNIT`, sizes and positions are in the specified scale, and
+physical quantities like gravity and forces are automatically scaled to match.
+
+Under the covers, this macro tunes internal constants and thresholds to work with
+the selected unit system.
+
+If you need further tuning for rendering, you'll need to convert positions and
+dimensions manually.
 
 ## 🔧 Local Development Setup
 

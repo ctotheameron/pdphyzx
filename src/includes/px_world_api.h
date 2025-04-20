@@ -23,13 +23,15 @@
  * physics worlds.
  */
 typedef struct {
-  PxWorld *(*new)(uint8_t iterations, uint8_t targetFps);
+  PxWorld *(*new)(uint8_t targetFps);
   void (*free)(PxWorld *world);
+  void (*setIterations)(PxWorld *world, uint8_t iterations);
+  void (*setGravity)(PxWorld *world, float x, float y);
   PxBody *(*newStaticBody)(PxWorld *world, PxShape shape, PxVec2 position);
   PxBody *(*newDynamicBody)(PxWorld *world, PxShape shape, float density,
                             PxVec2 position);
   void (*freeBody)(PxWorld *world, PxBody *body);
-  bool (*step)(PxWorld *world, PxVec2 g);
+  bool (*step)(PxWorld *world);
   void (*drawDebug)(PxWorld *world);
 } PxWorldAPI;
 

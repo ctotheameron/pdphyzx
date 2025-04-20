@@ -17,12 +17,16 @@
 
 typedef struct {
   bool (*isValid)(PxBody *body);
-  void (*setPosition)(PxBody *body, PxVec2 position);
+  void (*setPosition)(PxBody *body, float x, float y);
   void (*setOrientation)(PxBody *body, float radians);
   void (*moveBy)(PxBody *body, PxVec2 distance);
   void (*rotate)(PxBody *body, float radians);
-  void (*applyForce)(PxBody *body, PxVec2 force, PxVec2 contact);
-  void (*applyImpulse)(PxBody *body, PxVec2 impulse, PxVec2 force);
+
+  void (*applyForce)(PxBody *body, float forceX, float forceY, float contactX,
+                     float contactY);
+
+  void (*applyImpulse)(PxBody *body, float impulseX, float impulseY,
+                       float contactX, float contactY);
 } PxBodyAPI;
 
 PxBodyAPI *newPxBodyAPI(void);

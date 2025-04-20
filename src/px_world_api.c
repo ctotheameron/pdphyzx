@@ -8,7 +8,7 @@
 const PxWorldAPI *px_world;
 
 /**
- * Constructor function to initialize the Body API.
+ * Constructor function to initialize the World API.
  * Automatically called when the library is loaded.
  */
 PxWorldAPI *newPxWorldAPI(void) {
@@ -18,11 +18,11 @@ PxWorldAPI *newPxWorldAPI(void) {
     assert(0 && "Failed to allocate memory for PxWorldAPI");
   }
 
-  pxInitSinTable();
-
   // Initialize all function pointers
   api->new = &pxWorldNew;
   api->free = &pxWorldFree;
+  api->setIterations = &pxWorldSetIterations;
+  api->setGravity = &pxWorldSetGravity;
   api->newStaticBody = &pxWorldNewStaticBody;
   api->newDynamicBody = &pxWorldNewDynamicBody;
   api->freeBody = &pxWorldFreeBody;
@@ -35,7 +35,7 @@ PxWorldAPI *newPxWorldAPI(void) {
 }
 
 /**
- * Destructor function to clean up the Body API.
+ * Destructor function to clean up the World API.
  * Automatically called when the library is unloaded.
  */
 static void freePxWorldAPI(void) __attribute__((destructor));
